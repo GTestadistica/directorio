@@ -672,7 +672,7 @@
                 <td>${s.claveFr}</td>
                 <td>${s.nombre}</td>
                 <td>${s.diaPedido}</td>
-                <td style="font-weight:bold; color:var(--primary);">${auditada ? auditData.auditor : '-'}</td>
+                <td style="color:var(--primary);">${auditada ? auditData.auditor : '-'}</td>
                 <td style="font-size:11px; color:var(--text-muted);">${auditada ? formatDate(auditData.fechaAud, true) : '-'}</td>
             </tr>`;
         }).join('');
