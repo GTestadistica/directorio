@@ -427,7 +427,11 @@
 <script>
     lucide.createIcons();
 
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzWd9QgxXJETPoh4Q3BPet8mB8KiYDfirL1ZJfbg7O7A1zQWiyV6Q0NtJ6VOqJv5ofV/exec'; 
+    // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
+    const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9B";
+    const _part2 = "S2Z5Y2J3VnhNVUlxVW5VSEE5NjZUM2ktUzJsVGx4YlhtS0RU";
+    const _part3 = "RlZCX3pLSW5jT05aTXZxaTZrTEgyZmQyNzRTcUl0OEE5bUkvZXhlYw==";
+    const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
     function validarAcceso(permisoRequerido) {
@@ -1543,6 +1547,14 @@
         document.getElementById('modal-hallazgos').style.display = 'flex';
         lucide.createIcons();
     }
+
+    // --- SEGMENTO AÑADIDO: CAPA DE SEGURIDAD VISUAL ---
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+            return false;
+        }
+    };
 </script>
 
 </body>
