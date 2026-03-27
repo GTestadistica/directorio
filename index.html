@@ -1176,23 +1176,35 @@
         btn.classList.add('active');
         filtrarDatos();
     }
-
+     // Función para quitar acentos y dejar todo en minúsculas
+     const normalizarTexto = (str) => {return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");}
     function filtrarDatos() {
-        const t = document.getElementById('input-busqueda').value.toLowerCase();
+        const input = document.getElementById('input-busqueda');
+        const t = normalizarTexto(input.value);
         
-        // Filtro de empleados vinculados a la búsqueda de texto
-        const clavesEmp = plantillaGlobal.filter(p => p.nombre.toLowerCase().includes(t)).map(p => p.claveSucursal);
+        // 1. Buscamos qué claves de sucursal coinciden con el personal (empleados)
+        const clavesPorEmpleado = plantillaGlobal.filter(p => {
+            return normalizarTexto(p.nombre).includes(t);
+        }).map(p => p.claveSucursal);
 
+        // 2. Filtramos las sucursales
         const filtradas = sucursales.filter(s => {
-            // Condición 1: Texto (Nombre, Supervisor, Clave o Empleado)
-            const cumpleTexto = s.nombre.toLowerCase().includes(t) || 
-                                s.supervisor.toLowerCase().includes(t) || 
-                                s.claveSimi.toLowerCase().includes(t) || 
-                                clavesEmp.includes(s.claveSimi);
+            // Filtro de Texto (Sucursal, Supervisor, Claves)
+            const nombreSuc = normalizarTexto(s.nombre);
+            const supervisor = normalizarTexto(s.supervisor);
+            const claveSimi = normalizarTexto(s.claveSimi);
+            const claveFr = normalizarTexto(s.claveFr);
 
-            // Condición 2: Día de Pedido (Compara con la columna PEDIDO)
-            const cumpleDia = (diaSeleccionado === 'TODOS') || 
-                              (s.diaPedido && s.diaPedido.toUpperCase().includes(diaSeleccionado));
+            const cumpleTexto = nombreSuc.includes(t) || 
+                                supervisor.includes(t) || 
+                                claveSimi.includes(t) || 
+                                claveFr.includes(t) ||
+                                clavesPorEmpleado.includes(s.claveSimi);
+
+            // Filtro de Día (Solo aplica si hay un día seleccionado distinto a TODOS)
+            const dSel = typeof diaSeleccionado !== 'undefined' ? diaSeleccionado : 'TODOS';
+            const cumpleDia = (dSel === 'TODOS') || 
+                              (s.diaPedido && s.diaPedido.toUpperCase().includes(dSel));
 
             return cumpleTexto && cumpleDia;
         });
