@@ -135,6 +135,16 @@
         .row-total td { border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc; }
         .titulo-hallazgo { text-align: center; font-size: 12px; margin: 0 0 5px 0; font-weight: bold; text-transform: uppercase; color: #000; }
         .celda-nomina { background-color: #fde047 !important; color: #000 !important; font-weight: bold; text-align: center; }
+
+        /* Estilos para los botones de filtro por día */
+       .btn-dia {padding: 6px 10px; min-width: 45px; justify-content: center; font-size: 11px; position: relative;  display: flex; flex-direction: column; align-items: center; gap: 2px;}
+    .btn-dia.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
+        
+        /* Estilo para el número pequeño del contador */
+        .count-badge {font-size: 9px;background: rgba(15, 23, 42, 0.1); /* Color primario suave */
+            padding: 1px 5px;border-radius: 10px;font-weight: bold;}
+        .btn-dia.active .count-badge {background: rgba(255, 255, 255, 0.2); /* Blanco suave cuando está activo */
+            color: #fff;}
     </style>
 </head>
 <body>
@@ -176,10 +186,20 @@
 </div>
 
 <div id="vista-visor">
-    <div class="action-bar" style="margin-bottom: 10px;">
-        <div class="search-wrapper">
-            <i data-lucide="search"></i>
-            <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar por sucursal, clave, supervisor o empleado..." onkeyup="filtrarDatos()">
+    <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; align-items: center; justify-content: flex-start;">
+        <div class="search-wrapper" style="flex-grow: 0; width: 300px;"> <i data-lucide="search"></i>
+            <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar sucursal o personal..." onkeyup="filtrarDatos()">
+        </div>
+        
+        <div id="filtro-dias-pedido" style="display: flex; gap: 4px; align-items: center;">
+            <button class="menu-btn btn-dia active" onclick="setDiaFiltro('TODOS', this)"> <span>TODOS</span><span class="count-badge" id="cnt-todos">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('LUNES', this)"><span>L</span><span class="count-badge" id="cnt-lunes">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('MARTES', this)"><span>M</span><span class="count-badge" id="cnt-martes">0</span> </button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('MIERCOLES', this)"><span>X</span><span class="count-badge" id="cnt-miercoles">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('JUEVES', this)"><span>J</span><span class="count-badge" id="cnt-jueves">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('VIERNES', this)"><span>V</span><span class="count-badge" id="cnt-viernes">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('SABADO', this)"><span>S</span><span class="count-badge" id="cnt-sabado">0</span></button>
+            <button class="menu-btn btn-dia" onclick="setDiaFiltro('DOMINGO', this)"><span>D</span><span class="count-badge" id="cnt-domingo">0</span></button>
         </div>
     </div>
     <div class="card">
@@ -459,6 +479,7 @@
     let sucursalAuditoriaSeleccionada = null; 
     let detalleAuditoriaGlobal = [];
     let sesionEstadisticaActiva = false; // NUEVA VARIABLE PARA EL OJO
+    let diaSeleccionado = 'TODOS'; // Nueva variable para el estado del filtro
 
     window.onload = () => {
         const today = new Date();
@@ -580,6 +601,7 @@
             }
 
             actualizarDataLists();
+            actualizarContadoresDias();
             mostrarSucursales(sucursales);
             renderizarListasAuditoria();
             renderizarDetalleAuditoria();
@@ -1147,11 +1169,35 @@
             cerrarModal('modal-historial'); descargarDatosDeAPI(); 
         } catch(e) { alert("Error al actualizar la base de datos."); console.error(e); }
     }
+   // Función para manejar el clic en los botones de día
+    function setDiaFiltro(dia, btn) {
+        diaSeleccionado = dia;
+        document.querySelectorAll('.btn-dia').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtrarDatos();
+    }
 
     function filtrarDatos() {
         const t = document.getElementById('input-busqueda').value.toLowerCase();
+        
+        // Filtro de empleados vinculados a la búsqueda de texto
         const clavesEmp = plantillaGlobal.filter(p => p.nombre.toLowerCase().includes(t)).map(p => p.claveSucursal);
-        mostrarSucursales(sucursales.filter(s => s.nombre.toLowerCase().includes(t) || s.supervisor.toLowerCase().includes(t) || s.claveSimi.toLowerCase().includes(t) || clavesEmp.includes(s.claveSimi)));
+
+        const filtradas = sucursales.filter(s => {
+            // Condición 1: Texto (Nombre, Supervisor, Clave o Empleado)
+            const cumpleTexto = s.nombre.toLowerCase().includes(t) || 
+                                s.supervisor.toLowerCase().includes(t) || 
+                                s.claveSimi.toLowerCase().includes(t) || 
+                                clavesEmp.includes(s.claveSimi);
+
+            // Condición 2: Día de Pedido (Compara con la columna PEDIDO)
+            const cumpleDia = (diaSeleccionado === 'TODOS') || 
+                              (s.diaPedido && s.diaPedido.toUpperCase().includes(diaSeleccionado));
+
+            return cumpleTexto && cumpleDia;
+        });
+
+        mostrarSucursales(filtradas);
     }
 
     function solicitarCargaCSV() { if (validarAcceso("VENTAS")) document.getElementById('csv-file-input').click(); }
@@ -1555,6 +1601,21 @@
             return false;
         }
     };
+    function actualizarContadoresDias() {
+        const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+        let total = 0;
+
+        dias.forEach(dia => {
+            const count = sucursales.filter(s => s.diaPedido && s.diaPedido.toUpperCase().includes(dia)).length;
+            const element = document.getElementById(`cnt-${dia.toLowerCase()}`);
+            if (element) element.innerText = count;
+            total += count;
+        });
+
+        // El contador de "TODOS" muestra el total de sucursales con algún pedido asignado
+        const totalConPedido = sucursales.filter(s => s.diaPedido && s.diaPedido.trim() !== "").length;
+        document.getElementById('cnt-todos').innerText = totalConPedido;
+    }
 </script>
 
 </body>
