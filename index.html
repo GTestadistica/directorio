@@ -1249,7 +1249,7 @@
         document.getElementById('container-supervisor').innerHTML = `<span id="text-supervisor">${s.supervisor}</span>`;
         document.getElementById('val-p-optima').innerText = s.p_optima;
         document.getElementById('val-p-autorizada').innerText = emps.length;
-        document.getElementById('modal-titulo').innerHTML = `<i data-lucide="store"></i> ${s.claveFr} - ${s.claveSimi} | ${s.nombre} | ${s.telefono ||`;
+        document.getElementById('modal-titulo').innerHTML = `<i data-lucide="store"></i> ${s.claveFr} - ${s.claveSimi} | ${s.nombre} <span style="font-size: 14px; margin-left: 15px; color: var(--text-muted);"><i data-lucide="phone" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;"></i>${s.telefono || 'Sin teléfono'}</span>`;
         
         document.getElementById('tbody-plantilla').innerHTML = emps.map(e => {
             // Evaluamos si el puesto ya contiene etiquetas previas guardadas para pintar la fila desde el inicio
