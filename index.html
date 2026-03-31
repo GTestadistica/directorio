@@ -605,6 +605,21 @@
             mostrarSucursales(sucursales);
             renderizarListasAuditoria();
             renderizarDetalleAuditoria();
+            // --- NUEVO: Calcular y mostrar la fecha más reciente de TODA la base de datos ---
+            const contenedorFecha = document.getElementById('fecha-ultima-auditoria-global');
+            if (contenedorFecha && detalleAuditoriaGlobal.length > 0) {
+                const fechasValidas = detalleAuditoriaGlobal
+                    .map(d => new Date(d.fechaAud))
+                    .filter(d => !isNaN(d));
+                    
+                if (fechasValidas.length > 0) {
+                    const fechaMax = new Date(Math.max(...fechasValidas));
+                    contenedorFecha.innerHTML = `<i data-lucide="history" style="width: 14px; height: 14px; margin-right: 6px; color: var(--primary);"></i> Última auditoría: <strong>${formatDate(fechaMax, true)}</strong>`;
+                } else {
+                    contenedorFecha.style.display = 'none';
+                }
+            }
+            // ----------------------------------------------------------------------------------    
             
             status.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Actualizado ${new Date().toLocaleTimeString()}`;
             lucide.createIcons();
@@ -1249,7 +1264,7 @@
         document.getElementById('container-supervisor').innerHTML = `<span id="text-supervisor">${s.supervisor}</span>`;
         document.getElementById('val-p-optima').innerText = s.p_optima;
         document.getElementById('val-p-autorizada').innerText = emps.length;
-        document.getElementById('modal-titulo').innerHTML = `<i data-lucide="store"></i> ${s.claveFr} - ${s.claveSimi} | ${s.nombre} <span style="font-size: 14px; margin-left: 15px; color: var(--text-muted);"><i data-lucide="phone" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;"></i>${s.telefono || 'Sin teléfono'}</span>`;
+        document.getElementById('modal-titulo').innerHTML = `<i data-lucide="store"></i> ${s.claveFr} - ${s.claveSimi} | ${s.nombre} <span style="font-size: 14px; margin-left: 15px; color: var(--text-muted);"><i data-lucide="phone" style="width: 16px; height: 16px; margin-right: 16px; vertical-align: middle;"></i>${s.telefono || 'Sin teléfono'}</span>`;
         
         document.getElementById('tbody-plantilla').innerHTML = emps.map(e => {
             // Evaluamos si el puesto ya contiene etiquetas previas guardadas para pintar la fila desde el inicio
