@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.30</title>
+    <title>Visor Pro v10.31</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -157,7 +157,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.30</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.31</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloAuditorias()"><i data-lucide="calendar-check"></i>Calendario</button>
@@ -445,7 +445,7 @@
 
 <script>
     lucide.createIcons();
-     //   
+     //  
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
     const _part2 = "Y2J6N0R3c0tHT0p0SVJBM3k0MEU3RUEyVk9ienI0c2pGN19FWHF";
@@ -1011,7 +1011,11 @@
         sucursalAuditoriaSeleccionada = suc;
         document.getElementById('lbl-unidad-seleccionada').innerText = `Unidad: ${suc.nombre}`;
 
-        const historial = auditoriasGlobal.filter(a => a.claveSimi === claveSimi).sort((a,b) => new Date(b.fechaProg) - new Date(a.fechaProg));
+        // CORRECCIÓN: Filtrar para que NO aparezcan las auditorías canceladas
+        const historial = auditoriasGlobal
+            .filter(a => a.claveSimi === claveSimi && a.estado !== 'Cancelada')
+            .sort((a,b) => new Date(b.fechaProg) - new Date(a.fechaProg));
+            
         const tbodyHist = document.getElementById('tbody-auditorias-unidad');
         
         if (historial.length === 0) {
@@ -1322,10 +1326,11 @@
             if (e.puesto.includes('(SANCIÓN)')) claseExtra = 'fila-sancion';
             if (e.puesto.includes('(REACTIVADO)')) claseExtra = 'fila-reactivado';
 
-            let fModif = e.fechaModif || '-';
-            if (typeof fModif === 'string' && fModif.includes('T')) {
-                let d = new Date(fModif);
-                if (!isNaN(d)) fModif = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            // CORRECCIÓN: Parseo de fechaModif a prueba de fallos
+            let fModif = e.fechaModif ? String(e.fechaModif) : '-';
+            let dModif = new Date(fModif);
+            if (fModif !== '-' && !isNaN(dModif.getTime())) {
+                fModif = dModif.toLocaleDateString() + ' ' + dModif.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             }
 
             let puestoLimpio = e.puesto.replace(/ \((SANCIÓN|REACTIVADO)\)/gi, '').trim();
@@ -1481,7 +1486,8 @@
                 telefono: telStr, 
                 quitar: seVa,
                 modificado: fueModificado,
-                detalleHistorial: textoDetalleCambio.join(', ') 
+                detalleHistorial: textoDetalleCambio.join(', '),
+                fechaModif: new Date().toISOString() // CORRECCIÓN: Para forzar el envío del timestamp
             };
         });
 
@@ -1498,7 +1504,8 @@
                 puesto: newPuesto.trim(), 
                 telefono: newTel.trim(), 
                 quitar: false,
-                modificado: true 
+                modificado: true,
+                fechaModif: new Date().toISOString() // CORRECCIÓN: Para forzar el envío del timestamp
             });
         }
 
