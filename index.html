@@ -852,6 +852,8 @@
         if (contadoresDiv) {
             const conteoPorAuditor = {};
             programadas.forEach(a => {
+                // Mejora: Omitimos los "DESCANSOS" para que no sumen al contador del auditor
+                if (a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO') return; 
                 const auditor = a.auditor && a.auditor.trim() !== '' ? a.auditor.trim() : 'Sin asignar';
                 conteoPorAuditor[auditor] = (conteoPorAuditor[auditor] || 0) + 1;
             });
