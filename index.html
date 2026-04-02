@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.20</title>
+    <title>Visor Pro v10.30</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -68,7 +68,7 @@
         
         .tag-alta { border: 1px solid #15803d; color: #15803d; background: #dcfce7; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
         .tag-baja { border: 1px solid #b91c1c; color: #b91c1c; background: #fee2e2; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
-	.tag-actualizacion { border: 1px solid #0284c7; color: #0284c7; background: #e0f2fe; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
+        .tag-actualizacion { border: 1px solid #0284c7; color: #0284c7; background: #e0f2fe; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
         
         /* --- ESTILOS MEJORAS STAFF Y MOVIMIENTOS --- */
         .new-emp-inputs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 10px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 6px; }
@@ -142,10 +142,8 @@
     .btn-dia.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
         
         /* Estilo para el número pequeño del contador */
-        .count-badge {font-size: 9px;background: rgba(15, 23, 42, 0.1); /* Color primario suave */
-            padding: 1px 5px;border-radius: 10px;font-weight: bold;}
-        .btn-dia.active .count-badge {background: rgba(255, 255, 255, 0.2); /* Blanco suave cuando está activo */
-            color: #fff;}
+        .count-badge {font-size: 9px;background: rgba(15, 23, 42, 0.1); padding: 1px 5px;border-radius: 10px;font-weight: bold;}
+        .btn-dia.active .count-badge {background: rgba(255, 255, 255, 0.2); color: #fff;}
     </style>
 </head>
 <body>
@@ -159,7 +157,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.20</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.30</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloAuditorias()"><i data-lucide="calendar-check"></i>Calendario</button>
@@ -469,7 +467,7 @@
         }
     
         if (usuario.permisos.includes("TODO") || usuario.permisos.includes(permisoRequerido)) {
-            usuarioActivo = usuario.rol; // <--- Guardamos el nombre del usuario (ej: "Luis Ventura")
+            usuarioActivo = usuario.rol; 
             return true;
         } else {
             alert(`⛔ Acceso denegado.`);
@@ -482,14 +480,14 @@
     let sucursalActualId = null;
     let sucursalAuditoriaSeleccionada = null; 
     let detalleAuditoriaGlobal = [];
-    let sesionEstadisticaActiva = false; // NUEVA VARIABLE PARA EL OJO
-    let diaSeleccionado = 'TODOS'; // Nueva variable para el estado del filtro
+    let sesionEstadisticaActiva = false; 
+    let diaSeleccionado = 'TODOS'; 
 
     window.onload = () => {
         const today = new Date();
         const monthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('filtro-mes-auditoria').value = monthStr;
-        document.getElementById('filtro-mes-detalle').value = monthStr; // <--- NUEVA LÍNEA
+        document.getElementById('filtro-mes-detalle').value = monthStr; 
         descargarDatosDeAPI();
     };
 
@@ -526,7 +524,6 @@
             
             sucursales.sort((a, b) => a.nombre.localeCompare(b.nombre));
             
-            // MAPEO ACTUALIZADO PARA FECHA Y USUARIO DE MODIFICACIÓN EN PLANTILLA
             plantillaGlobal = data.plantilla.slice(1).map(col => ({
                 claveSucursal: col[0]?.toString().trim(), noEmpleado: col[1]?.toString().trim() || '',
                 nombre: col[2] || '', puesto: col[3] || '', telefono: col[4] || '',
@@ -539,10 +536,9 @@
 
             if (data.historial && data.historial.length > 1) {
                 historialGlobal = data.historial.slice(1).map((col, idx) => ({
-                    idRow: idx + 2, fecha: col[0], sucursal: col[1], accion: col[2], empleado: col[3], detalle: col[4], informado: col[5],usuario: col[6] || 'Sistema' // <-- NUEVA LÍNEA: CAPTURA EL USUARIO
+                    idRow: idx + 2, fecha: col[0], sucursal: col[1], accion: col[2], empleado: col[3], detalle: col[4], informado: col[5],usuario: col[6] || 'Sistema' 
                 })).reverse();
                 
-                // Contar movimientos de HOY para la burbuja roja
                 const todayDate = new Date();
                 const movsHoy = historialGlobal.filter(h => {
                     if(!h.fecha) return false;
@@ -579,13 +575,11 @@
                 auditoresGlobal = [];
             }
             
-            // --- NUEVO BLOQUE: Mapeo de DetalleAuditoria ---
             if (data.detalleAuditoria && data.detalleAuditoria.length > 1) {
-                // Mapeo: A=0, E=4 (Fecha), M=12 (Clave), AA=26 (Auditor), AB=27, AE=30, AF=31, AG=32, AH=33, AI=34
                 detalleAuditoriaGlobal = data.detalleAuditoria.slice(1).map(col => ({
-                    fechaAud: col[4], // Columna E
+                    fechaAud: col[4], 
                     claveSimi: col[12]?.toString().trim() || '',
-                    auditor: col[26]?.toString().trim() || '', // Columna AA
+                    auditor: col[26]?.toString().trim() || '', 
                     hallazgo: col[27]?.toString().trim() || '',
                     producto: col[30]?.toString().trim() || '',
                     costo: parseFloat(col[31]) || 0,
@@ -597,7 +591,6 @@
                 detalleAuditoriaGlobal = [];
             }
             
-            // Guardar los accesos
             if (data.accesos && data.accesos.length > 1) {
                 rolesGlobal = data.accesos.slice(1).map(col => ({
                     rol: col[0],
@@ -611,7 +604,7 @@
             mostrarSucursales(sucursales);
             renderizarListasAuditoria();
             renderizarDetalleAuditoria();
-            // --- NUEVO: Calcular y mostrar la fecha más reciente de TODA la base de datos ---
+            
             const contenedorFecha = document.getElementById('fecha-ultima-auditoria-global');
             if (contenedorFecha && detalleAuditoriaGlobal.length > 0) {
                 const fechasValidas = detalleAuditoriaGlobal
@@ -625,7 +618,6 @@
                     contenedorFecha.style.display = 'none';
                 }
             }
-            // ----------------------------------------------------------------------------------   
             
             status.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Actualizado ${new Date().toLocaleTimeString()}`;
             lucide.createIcons();
@@ -638,21 +630,17 @@
         }
     }
 
-    // --- ESTRUCTURA PARA CARGA PEREZOSA (LAZY LOADING) DE DETALLES DE AUDITORÍA ---
-    // --- ESTRUCTURA PARA CARGA PEREZOSA (LAZY LOADING) DE DETALLES DE AUDITORÍA ---
     async function cargarDetallePesado() {
-        if (detalleAuditoriaGlobal.length > 0) return; // Ya está cargado, no volver a descargar
+        if (detalleAuditoriaGlobal.length > 0) return; 
         
         try {
             document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Descargando datos pesados...';
             lucide.createIcons();
             
-            // Hacemos una petición ESPECÍFICA al backend pidiendo solo esta tabla
             const response = await fetch(API_URL + "?accion=GET_DETALLE_AUDITORIA");
             const data = await response.json();
             
             if (data.detalleAuditoria && data.detalleAuditoria.length > 1) {
-                // Mapeamos los datos igual que en la descarga principal
                 detalleAuditoriaGlobal = data.detalleAuditoria.slice(1).map(col => ({
                     fechaAud: col[4], 
                     claveSimi: col[12]?.toString().trim() || '',
@@ -676,7 +664,6 @@
         }
     }
 
-    // --- LÓGICA VISTAS (PESTAÑAS) ---
     function cambiarVista(vista) {
         document.getElementById('vista-visor').style.display = vista === 'visor' ? 'block' : 'none';
         document.getElementById('vista-auditoria').style.display = vista === 'auditoria' ? 'block' : 'none';
@@ -694,13 +681,11 @@
         }
     }
     
-    // NUEVA FUNCIÓN PARA ABRIR EL DETALLE CON LAZY LOADING
     async function abrirDetalleAuditoria() {
         if (validarAcceso("ESTADISTICA")) {
             document.getElementById('tab-detalle-auditoria').style.display = 'inline-block';
             cambiarVista('detalle-auditoria');
             
-            // Comprobamos si es necesario cargar la información pesada primero
             if (detalleAuditoriaGlobal.length === 0) {
                 await cargarDetallePesado();
             }
@@ -708,9 +693,7 @@
         }
     }
     
-    // --- LÓGICA DETALLE DE AUDITORÍA ---
     function obtenerDatosAuditoriaMes(claveSimi, mesSeleccionado) {
-        // Buscamos la primera entrada en DetalleAuditoria para esa sucursal y mes
         return detalleAuditoriaGlobal.find(h => {
             if (h.claveSimi !== claveSimi || !h.fechaAud) return false;
             const d = new Date(h.fechaAud);
@@ -732,7 +715,6 @@
             s.claveFr.toLowerCase().includes(textoBusqueda)
         );
 
-        // Objeto para contar auditorías únicas (Sucursal + Auditor) por auditor
         const conteoAuditores = {};
 
         tbody.innerHTML = filtradas.map((s, i) => {
@@ -765,7 +747,6 @@
             </tr>`;
         }).join('');
 
-        // Renderizar contadores al lado de la búsqueda
         if (contadoresDiv) {
             contadoresDiv.innerHTML = Object.entries(conteoAuditores)
                 .sort((a,b) => b[1] - a[1])
@@ -780,13 +761,13 @@
         lucide.createIcons();
     }
         
-    // --- NUEVAS FUNCIONES AUXILIARES AUDITORÍA ---
     function obtenerFiltroEstadoSeleccionado() {
         return document.querySelector('input[name="auditStatusFilter"]:checked').value; 
     }
 
     function obtenerEstadoSucursalMes(sucursal, mesSeleccionado) {
         return auditoriasGlobal.some(a => {
+            // RESTRICCIÓN ESTRICTA DE ESTADO PROGRAMADA
             if(a.claveSimi !== sucursal.claveSimi || a.estado !== 'Programada' || !a.fechaProg) return false;
             const d = new Date(a.fechaProg);
             const aMes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -794,7 +775,6 @@
         });
     }
 
-    // --- LÓGICA MÓDULO AUDITORÍA ---
     function obtenerMesSeleccionado() {
         return document.getElementById('filtro-mes-auditoria').value; 
     }
@@ -833,7 +813,9 @@
         const tbodyProg = document.getElementById('tbody-programadas');
         const tbodyPend = document.getElementById('tbody-pendientes');
         const mesSeleccionado = obtenerMesSeleccionado();
+        const filtroEstado = obtenerFiltroEstadoSeleccionado();
         
+        // RESTRICCIÓN ESTRICTA: SOLO MOSTRAR PROGRAMADAS
         const programadas = auditoriasGlobal.filter(a => {
             if(a.estado !== "Programada" || !a.fechaProg) return false;
             const d = new Date(a.fechaProg);
@@ -844,7 +826,17 @@
         tbodyProg.innerHTML = programadas.length === 0 ? '<tr><td colspan="2" style="text-align:center;">No hay programadas para este mes</td></tr>' : 
             programadas.map(a => `<tr><td><strong>${a.sucursal}</strong></td><td>${formatDate(a.fechaProg, true)}</td></tr>`).join('');
 
-        tbodyPend.innerHTML = sucursales.map(s => generarFilaPendiente(s, mesSeleccionado)).filter(fila => fila !== null).join('');
+        // --- NUEVA LÓGICA: INSERTAR BOTÓN DE DESCANSO ---
+        let htmlDescanso = '';
+        if (filtroEstado === 'all' || filtroEstado === 'pending') {
+            htmlDescanso = `
+            <tr class="fila-clickable" style="background-color: #fff7ed; color: #ea580c; border-left: 4px solid #ea580c;" onclick="seleccionarUnidadAuditoria('DESC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="coffee" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR DESCANSO</td>
+                <td>-</td>
+            </tr>`;
+        }
+
+        tbodyPend.innerHTML = htmlDescanso + sucursales.map(s => generarFilaPendiente(s, mesSeleccionado)).filter(fila => fila !== null).join('');
         
         let countScheduled = 0;
         let countPending = 0;
@@ -856,7 +848,6 @@
         document.getElementById('counter-pending').innerText = countPending;
         document.getElementById('counter-scheduled').innerText = countScheduled;
         
-        // --- Lógica Contadores de Auditores por Mes ---
         const contadoresDiv = document.getElementById('contadores-auditores');
         if (contadoresDiv) {
             const conteoPorAuditor = {};
@@ -867,7 +858,7 @@
             
             if (Object.keys(conteoPorAuditor).length > 0) {
                 contadoresDiv.innerHTML = Object.entries(conteoPorAuditor)
-                    .sort((a, b) => b[1] - a[1]) // Ordena del que tiene más al que tiene menos
+                    .sort((a, b) => b[1] - a[1]) 
                     .map(([auditor, cantidad]) => `
                         <div style="background: #f8fafc; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; color: var(--text-dark); display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                             <i data-lucide="user-check" style="width: 14px; height: 14px; color: var(--primary);"></i> ${auditor}: 
@@ -906,6 +897,7 @@
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
+            // RESTRICCIÓN ESTRICTA: SOLO MOSTRAR PROGRAMADAS
             const auditoriasDelDia = auditoriasGlobal.filter(a => {
                 if (a.estado !== "Programada" || !a.fechaProg) return false;
                 const aDate = new Date(a.fechaProg);
@@ -914,16 +906,19 @@
             });
 
             let eventsHtml = auditoriasDelDia.map(a => {
+                const isDescanso = a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO';
                 const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
-                const cls = isPernocta ? 'audit-event pernocta' : 'audit-event';
-                const iconHtml = isPernocta ? '<i data-lucide="moon" style="width:10px; height:10px;"></i>' : '<i data-lucide="user" style="width:10px; height:10px;"></i>';
+                const cls = isPernocta && !isDescanso ? 'audit-event pernocta' : 'audit-event';
                 
-                // Conversión de hora a formato AM/PM (Soporte para formato estándar y fechas ISO de Google Sheets)
+                // LÓGICA DE ICONOS Y COLOR PARA DESCANSO
+                const iconHtml = isDescanso ? '<i data-lucide="coffee" style="width:10px; height:10px;"></i>' : (isPernocta ? '<i data-lucide="moon" style="width:10px; height:10px;"></i>' : '<i data-lucide="user" style="width:10px; height:10px;"></i>');
+                const customStyle = isDescanso ? 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;' : '';
+
                 let horaStr = a.hora ? a.hora.toString() : '';
                 if (horaStr.includes('T') || horaStr.includes('Z')) {
                     const dateObj = new Date(horaStr);
                     if (!isNaN(dateObj)) {
-                        let h = dateObj.getHours(); // Ajusta automáticamente la zona horaria
+                        let h = dateObj.getHours();
                         let m = dateObj.getMinutes();
                         let ampm = h >= 12 ? 'PM' : 'AM';
                         h = h % 12 || 12;
@@ -940,11 +935,11 @@
                     }
                 }
 
-                const horaHtml = horaStr ? `<div style="font-size:9px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
+                const horaHtml = horaStr && !isDescanso ? `<div style="font-size:9px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px; color: #064e3b;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
                 const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="opacity: 0.85; margin-top:2px;"><i data-lucide="users" style="width:10px; height:10px;"></i> + ${a.apoyo}</div>` : '';
 
                 return `
-                <div class="${cls}" title="Unidad: ${a.sucursal}&#10;Hora: ${horaStr || 'No definida'}&#10;Líder: ${a.auditor}&#10;Apoyo: ${a.apoyo || 'Ninguno'}&#10;Estado: ${a.estado}" onclick="seleccionarUnidadAuditoria('${a.claveSimi}')">
+                <div class="${cls}" style="${customStyle}" title="Unidad: ${a.sucursal}&#10;Hora: ${horaStr || 'No definida'}&#10;Líder: ${a.auditor}&#10;Apoyo: ${a.apoyo || 'Ninguno'}&#10;Estado: ${a.estado}" onclick="seleccionarUnidadAuditoria('${a.claveSimi}')">
                     ${horaHtml}
                     <div class="event-title">${a.sucursal}</div>
                     <div class="event-subtitle">${iconHtml} ${a.auditor || 'Sin asignar'}</div>
@@ -971,8 +966,18 @@
         const tbodyPend = document.getElementById('tbody-pendientes');
         const mesSeleccionado = obtenerMesSeleccionado();
 
-        tbodyPend.innerHTML = sucursales.filter(s => s.nombre.toLowerCase().includes(t))
+        let htmlDescanso = '';
+        if ("descanso".includes(t)) {
+             htmlDescanso = `
+            <tr class="fila-clickable" style="background-color: #fff7ed; color: #ea580c; border-left: 4px solid #ea580c;" onclick="seleccionarUnidadAuditoria('DESC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="coffee" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR DESCANSO</td>
+                <td>-</td>
+            </tr>`;
+        }
+
+        tbodyPend.innerHTML = htmlDescanso + sucursales.filter(s => s.nombre.toLowerCase().includes(t))
                                         .map(s => generarFilaPendiente(s, mesSeleccionado))
+                                        .filter(fila => fila !== null)
                                         .join('');
         lucide.createIcons();
     }
@@ -993,7 +998,14 @@
             }
         }
 
-        const suc = sucursales.find(s => s.claveSimi === claveSimi);
+        // LÓGICA DE SELECCIÓN PARA EL DESCANSO
+        let suc = sucursales.find(s => s.claveSimi === claveSimi);
+        if (claveSimi === 'DESC') {
+            suc = { claveSimi: 'DESC', nombre: 'DESCANSO' };
+        }
+
+        if (!suc) return;
+        
         sucursalAuditoriaSeleccionada = suc;
         document.getElementById('lbl-unidad-seleccionada').innerText = `Unidad: ${suc.nombre}`;
 
@@ -1001,7 +1013,7 @@
         const tbodyHist = document.getElementById('tbody-auditorias-unidad');
         
         if (historial.length === 0) {
-            tbodyHist.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Sin auditorías previas</td></tr>';
+            tbodyHist.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Sin registros previos</td></tr>';
         } else {
             tbodyHist.innerHTML = historial.map(h => {
                 let claseEstado = h.estado === 'Programada' ? 'tag-alta' : 'tag-baja';
@@ -1020,10 +1032,8 @@
         lucide.createIcons();
     }
 
-    // 1. Nueva memoria global temporal
     let colaAuditorias = { programar: [], cancelar: [] };
 
-    // 2. Función para mostrar/ocultar el botón flotante
     function actualizarBotonSyncLote() {
         const total = colaAuditorias.programar.length + colaAuditorias.cancelar.length;
         const btn = document.getElementById('btn-sync-lote');
@@ -1038,7 +1048,6 @@
         }
     }
     
-    // 3. Modificamos Guardar para que actúe localmente
     function guardarAuditoria() {
         if (!sucursalAuditoriaSeleccionada) { alert("Selecciona una unidad de la lista."); return; }
         
@@ -1048,12 +1057,10 @@
         const hora = document.getElementById('input-hora-auditoria').value;
         const pernocta = document.getElementById('chk-pernocta').checked;
 
-        if (!auditor || !fecha) { alert("Llena el auditor líder y la fecha."); return; }
+        if (!auditor || !fecha) { alert("Llena el auditor principal y la fecha."); return; }
 
-        // Creamos un ID temporal por si decides cancelar esta misma auditoría antes de sincronizar
         const tempId = 'temp-' + Date.now();
 
-        // Agregamos a la cola de envío
         colaAuditorias.programar.push({
             _tempId: tempId,
             claveSimi: sucursalAuditoriaSeleccionada.claveSimi,
@@ -1065,7 +1072,6 @@
             pernocta: pernocta
         });
 
-        // Actualizamos la memoria visual para que parezca que ya se subió
         auditoriasGlobal.push({
             idRow: tempId,
             fechaRegistro: new Date().toISOString(),
@@ -1091,9 +1097,8 @@
         siHayUnidadSeleccionadaRefrescar();
     }
 
-    // 4. Modificamos Cancelar para que actúe localmente
     function cancelarAuditoria(idRow) {
-        if(!confirm("¿Deseas cancelar esta auditoría programada?")) return;
+        if(!confirm("¿Deseas cancelar esta programación?")) return;
         
         const motivo = prompt("Por favor, ingresa el MOTIVO de la cancelación:");
         if (!motivo || motivo.trim() === "") { alert("❌ Abortado: Motivo obligatorio."); return; }
@@ -1103,12 +1108,10 @@
 
         const idStr = String(idRow);
 
-        // Si estamos cancelando algo que acabamos de programar y que aún no se sincroniza
         if (idStr.startsWith('temp-')) {
             colaAuditorias.programar = colaAuditorias.programar.filter(p => p._tempId !== idStr);
             auditoriasGlobal = auditoriasGlobal.filter(a => a.idRow !== idStr);
         } else {
-            // Es una auditoría real que ya existe en la Base de Datos
             colaAuditorias.cancelar.push({ idRow: idRow, motivo: motivo.trim(), autoriza: autoriza.trim() });
             const aud = auditoriasGlobal.find(a => String(a.idRow) === idStr);
             if(aud) aud.estado = 'Cancelada';
@@ -1119,7 +1122,7 @@
         renderizarListasAuditoria();
         siHayUnidadSeleccionadaRefrescar();
     }
-    // 5. NUEVA Función maestra que procesa la cola
+
     async function sincronizarLoteAuditorias() {
         if (colaAuditorias.programar.length === 0 && colaAuditorias.cancelar.length === 0) return;
 
@@ -1138,13 +1141,11 @@
 
             await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             
-            // Éxito: Limpiamos la memoria local temporal
             colaAuditorias = { programar: [], cancelar: [] };
             actualizarBotonSyncLote();
             btn.disabled = false;
             btn.style.opacity = '1';
 
-            // Descargamos datos reales para tener los IDs correctos de las nuevas filas creadas
             await descargarDatosDeAPI(); 
             alert("✅ Todos los cambios se sincronizaron con éxito.");
         } catch(e) { 
@@ -1153,7 +1154,7 @@
             document.getElementById('btn-sync-lote').style.opacity = '1';
         }
     }
-    // --- LÓGICA VISOR SUCURSALES ---
+
     function mostrarSucursales(datos) {
         const tbody = document.getElementById('tabla-body');
         tbody.innerHTML = datos.map((s, i) => {
@@ -1193,7 +1194,6 @@
         tbody.innerHTML = historialGlobal.map(h => {
             const suc = sucursales.find(s => s.claveSimi == h.sucursal);
             const nombreSuc = suc ? suc.nombre : h.sucursal;
-            // SE ACTUALIZÓ PARA RECONOCER LA ETIQUETA "ACTUALIZACIÓN"
             const claseTag = h.accion === 'ALTA' ? 'tag-alta' : (h.accion === 'BAJA' ? 'tag-baja' : (h.accion === 'ACTUALIZACIÓN' ? 'tag-actualizacion' : ''));
             const yaInformado = (h.informado && h.informado.toString().toLowerCase() === "sí");
             
@@ -1237,27 +1237,24 @@
             cerrarModal('modal-historial'); descargarDatosDeAPI(); 
         } catch(e) { alert("Error al actualizar la base de datos."); console.error(e); }
     }
-   // Función para manejar el clic en los botones de día
+
     function setDiaFiltro(dia, btn) {
         diaSeleccionado = dia;
         document.querySelectorAll('.btn-dia').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         filtrarDatos();
     }
-     // Función para quitar acentos y dejar todo en minúsculas
+
      const normalizarTexto = (str) => {return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");}
     function filtrarDatos() {
         const input = document.getElementById('input-busqueda');
         const t = normalizarTexto(input.value);
         
-        // 1. Buscamos qué claves de sucursal coinciden con el personal (empleados)
         const clavesPorEmpleado = plantillaGlobal.filter(p => {
             return normalizarTexto(p.nombre).includes(t);
         }).map(p => p.claveSucursal);
 
-        // 2. Filtramos las sucursales
         const filtradas = sucursales.filter(s => {
-            // Filtro de Texto (Sucursal, Supervisor, Claves)
             const nombreSuc = normalizarTexto(s.nombre);
             const supervisor = normalizarTexto(s.supervisor);
             const claveSimi = normalizarTexto(s.claveSimi);
@@ -1269,7 +1266,6 @@
                                 claveFr.includes(t) ||
                                 clavesPorEmpleado.includes(s.claveSimi);
 
-            // Filtro de Día (Solo aplica si hay un día seleccionado distinto a TODOS)
             const dSel = typeof diaSeleccionado !== 'undefined' ? diaSeleccionado : 'TODOS';
             const cumpleDia = (dSel === 'TODOS') || 
                               (s.diaPedido && s.diaPedido.toUpperCase().includes(dSel));
@@ -1324,14 +1320,12 @@
             if (e.puesto.includes('(SANCIÓN)')) claseExtra = 'fila-sancion';
             if (e.puesto.includes('(REACTIVADO)')) claseExtra = 'fila-reactivado';
 
-            // Corrección visual de la fecha (quita el T...Z de ISO)
             let fModif = e.fechaModif || '-';
             if (typeof fModif === 'string' && fModif.includes('T')) {
                 let d = new Date(fModif);
                 if (!isNaN(d)) fModif = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             }
 
-            // Guardamos los valores originales en los atributos data-old-* para compararlos luego
             let puestoLimpio = e.puesto.replace(/ \((SANCIÓN|REACTIVADO)\)/gi, '').trim();
 
             return `<tr data-old-id="${e.noEmpleado}" data-old-nombre="${e.nombre}" data-old-puesto="${puestoLimpio}" data-old-tel="${e.telefono}" class="${claseExtra}">
@@ -1373,13 +1367,11 @@
         const isMarcada = fila.classList.contains('fila-marcada-quitar') || fila.classList.contains('fila-sancion') || fila.classList.contains('fila-reactivado');
 
         if (isMarcada) {
-            // Cancelar y limpiar todo
             fila.classList.remove('fila-marcada-quitar', 'fila-sancion', 'fila-reactivado');
             btn.innerHTML = '<i data-lucide="user-minus"></i>';
             select.style.display = 'none';
             select.value = '';
         } else {
-            // Iniciar proceso
             fila.classList.add('fila-marcada-quitar');
             btn.innerHTML = '<i data-lucide="undo-2"></i>';
             select.style.display = 'block';
@@ -1391,10 +1383,8 @@
         const fila = select.closest('tr');
         const val = select.value;
         
-        // Limpiamos clases previas
         fila.classList.remove('fila-marcada-quitar', 'fila-sancion', 'fila-reactivado');
         
-        // Aplicamos la clase correcta
         if (val === 'SANCION') {
             fila.classList.add('fila-sancion');
         } else if (val === 'REACTIVADO') {
@@ -1402,7 +1392,6 @@
         } else if (val === 'ACTIVO') {
             // "Activo" no lleva clase, se ve normal
         } else {
-            // Despido, Renuncia, Abandono o Vacio (Se marca para quitar)
             fila.classList.add('fila-marcada-quitar');
         }
     }
@@ -1421,11 +1410,10 @@
             const containerSup = document.getElementById('container-supervisor');
             containerSup.innerHTML = `<input id="edit-supervisor" class="edit-combo" list="lista-supervisores-auto" value="${containerSup.innerText}">`;
             document.querySelectorAll('#tbody-plantilla tr').forEach(f => {
-                f.cells[0].innerHTML = `<input class="edit-combo" value="${f.cells[0].innerText}">`; // No Emp
-                f.cells[1].innerHTML = `<input class="edit-combo" value="${f.cells[1].innerText}">`; // Nombre
-                f.cells[2].innerHTML = `<input class="edit-combo" list="lista-puestos-auto" value="${f.cells[2].innerText}">`; // Puesto
-                f.cells[3].contentEditable = true; f.cells[3].style.background = "#fff"; f.cells[3].style.border = "1px dashed #cbd5e1"; // Teléfono
-                // f.cells[4] es 'Ult. Modif', la dejamos intacta (solo lectura)
+                f.cells[0].innerHTML = `<input class="edit-combo" value="${f.cells[0].innerText}">`; 
+                f.cells[1].innerHTML = `<input class="edit-combo" value="${f.cells[1].innerText}">`; 
+                f.cells[2].innerHTML = `<input class="edit-combo" list="lista-puestos-auto" value="${f.cells[2].innerText}">`; 
+                f.cells[3].contentEditable = true; f.cells[3].style.background = "#fff"; f.cells[3].style.border = "1px dashed #cbd5e1"; 
             });
         }
     }
@@ -1433,6 +1421,18 @@
     async function guardarCambios() {
         const s = sucursales.find(item => item.id === sucursalActualId);
         const filas = Array.from(document.querySelectorAll('#tbody-plantilla tr'));
+        
+        // --- NUEVA MEJORA: VALIDACIÓN DE MOTIVO OBLIGATORIO ---
+        for (let f of filas) {
+            const selectMotivo = f.querySelector('.motivo-baja');
+            // Si el combo está visible (se presionó el botón de acción) y sigue en "Motivo..." (vacío)
+            if (selectMotivo && selectMotivo.style.display !== 'none' && selectMotivo.value === '') {
+                const empNombre = (f.cells[1].querySelector('input')?.value || f.cells[1].innerText).trim();
+                alert(`⚠️ Acción requerida:\n\nDebes seleccionar un motivo de baja/estatus para el empleado:\n👤 ${empNombre}`);
+                return; // 🛑 ESTO DETIENE EL PROCESO Y NO PERMITE GUARDAR
+            }
+        }
+        // ------------------------------------------------------
         
         let datosPlantilla = filas.map(f => {
             const selectMotivo = f.querySelector('.motivo-baja');
@@ -1453,7 +1453,6 @@
 
             puestoStr = puestoStr.replace(/ \((SANCIÓN|REACTIVADO)\)/gi, '').trim();
 
-            // NUEVO: Generar el texto exacto de lo que cambió
             let textoDetalleCambio = [];
             if (puestoStr !== originalPuesto) textoDetalleCambio.push(`Puesto: ${puestoStr}`);
             if (nombreStr !== originalNombre) textoDetalleCambio.push(`Nombre modificado`);
@@ -1477,7 +1476,7 @@
                 telefono: telStr, 
                 quitar: seVa,
                 modificado: fueModificado,
-                detalleHistorial: textoDetalleCambio.join(', ') // <-- Pasamos el detalle al backend
+                detalleHistorial: textoDetalleCambio.join(', ') 
             };
         });
 
@@ -1514,11 +1513,10 @@
             cerrarModal('modal-detalles'); descargarDatosDeAPI();
         } catch(e) { alert("Error al guardar"); }
     }
-    // NUEVA FUNCIÓN: Autocompleta los datos si se selecciona un empleado existente
+    
     function autocompletarEmpleadoNuevo(valorBusqueda) {
         if (!valorBusqueda) return;
         
-        // El formato de la lista es "1234 - JUAN PEREZ"
         const partes = valorBusqueda.split(' - ');
         const noEmp = partes[0]?.trim();
         
@@ -1526,11 +1524,11 @@
         if (emp) {
             document.getElementById('new-emp-no').value = emp.noEmpleado;
             document.getElementById('new-emp-nombre').value = emp.nombre;
-            // Limpiamos etiquetas de sanciones/reactivaciones del puesto si las tuviera
             document.getElementById('new-emp-puesto').value = emp.puesto.replace(/ \((SANCIÓN|REACTIVADO)\)/gi, '').trim();
             document.getElementById('new-emp-tel').value = emp.telefono || '';
         }
     }
+    
     function actualizarDataLists() {
         document.getElementById('lista-supervisores-auto').innerHTML = [...new Set(sucursales.map(x => x.supervisor))].sort().map(x => `<option value="${x}">`).join('');
         document.getElementById('lista-puestos-auto').innerHTML = [...new Set(plantillaGlobal.map(x => x.puesto))].sort().map(x => `<option value="${x}">`).join('');
@@ -1561,35 +1559,31 @@
     
     function cancelarEdicion() { abrirModal(sucursalActualId); }
     window.onclick = e => { if (e.target.classList.contains('modal')) cerrarModal(e.target.id); }
-    // NUEVA FUNCIÓN: Mostrar Spos validando sesión y sacando el dato de memoria
+    
     function mostrarSpos(e, claveSimi, btnElement) {
         if(e) e.stopPropagation(); 
         
-        // 1. Validamos si no se ha metido la contraseña antes
         if (!sesionEstadisticaActiva) {
             if (validarAcceso("ESTADISTICA")) {
-                sesionEstadisticaActiva = true; // Guardamos el pase libre
+                sesionEstadisticaActiva = true; 
             } else {
-                return; // Contraseña incorrecta, abortamos
+                return; 
             }
         }
 
-        // 2. Buscamos el dato real en la memoria (Nadie puede inspeccionar esto)
         const s = sucursales.find(item => item.claveSimi === claveSimi);
         const valorReal = s && s.spos ? s.spos : 'N/D';
 
-        // 3. Modificamos la interfaz
         const celda = btnElement.parentElement;
         celda.querySelector('.btn-ojo').style.display = 'none';
         
         const textoSpos = celda.querySelector('.texto-spos');
-        textoSpos.innerText = valorReal; // Inyectamos el texto
+        textoSpos.innerText = valorReal; 
         textoSpos.style.display = 'inline';
         
         celda.classList.add('spos-visible');
     }
 
-    // NUEVO: Ocultar Spos y borrar el rastro de seguridad
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.spos-visible').forEach(celda => {
             if (!celda.contains(e.target)) {
@@ -1597,19 +1591,18 @@
                 
                 const textoSpos = celda.querySelector('.texto-spos');
                 textoSpos.style.display = 'none';
-                textoSpos.innerText = ''; // BORRAMOS EL RASTRO DEL HTML por seguridad
+                textoSpos.innerText = ''; 
                 
                 celda.classList.remove('spos-visible');
             }
         });
     });
-    // --- LÓGICA DE HALLAZGOS Y DESGLOSE ---
+    
     function generarTablaHallazgo(titulo, items) {
         let rowsHtml = '';
         let totalCant = 0;
         let totalImp = 0;
 
-        // Si no hay elementos, mostramos la fila de "SIN HALLAZGO" igual que en tu imagen
         if (items.length === 0) {
             rowsHtml = `<tr>
                 <td>0000-SIN HALLAZGO</td>
@@ -1661,7 +1654,6 @@
             alert("⚠️ No se encontraron datos de detalle de auditoría en la base de datos actual.");
         }
 
-        // Filtramos por clave SIMI y estrictamente por el mes seleccionado en la pantalla
         const hallazgosUnidad = detalleAuditoriaGlobal.filter(h => {
             if (h.claveSimi !== claveSimi || !h.fechaAud) return false;
             const d = new Date(h.fechaAud);
@@ -1670,7 +1662,6 @@
             return hMes === mesSeleccionado;
         });
 
-        // Extraemos el auditor y la fecha del primer registro encontrado de esa unidad en ese mes
         let auditorNombre = "No especificado";
         let fechaExacta = "";
         if (hallazgosUnidad.length > 0) {
@@ -1702,14 +1693,12 @@
             contenidoHtml += generarTablaHallazgo(cat, items);
         });
 
-        // Título del modal mejorado incluyendo al auditor y la fecha real
         document.getElementById('modal-hallazgos-titulo').innerHTML = `<i data-lucide="clipboard-search"></i> Hallazgos: ${suc.nombre} | Auditor: ${auditorNombre} (${fechaExacta})`;
         document.getElementById('contenedor-hallazgos').innerHTML = contenidoHtml;
         document.getElementById('modal-hallazgos').style.display = 'flex';
         lucide.createIcons();
     }
 
-    // --- SEGMENTO AÑADIDO: CAPA DE SEGURIDAD VISUAL ---
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.onkeydown = function(e) {
         if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
@@ -1727,7 +1716,6 @@
             total += count;
         });
 
-        // El contador de "TODOS" muestra el total de sucursales con algún pedido asignado
         const totalConPedido = sucursales.filter(s => s.diaPedido && s.diaPedido.trim() !== "").length;
         document.getElementById('cnt-todos').innerText = totalConPedido;
     }
