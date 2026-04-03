@@ -316,7 +316,7 @@
             </h3>
         </div>
         <div class="calendar-header-row">
-            <div>Dom</div><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div>
+            <div>Lunes</div><div>Martes</div><div>Miércoles</div><div>Jueves</div><div>Viernes</div><div>Sábado</div><div>Domingo</div>
         </div>
         <div id="calendario-dias" class="calendar-grid-days">
             </div>
@@ -881,13 +881,22 @@
         if (!mesVal) return;
         
         const [year, month] = mesVal.split('-').map(Number);
+        // --- 4. RENDERIZAR GRILLA ---
         const container = document.getElementById('calendario-dias');
         container.innerHTML = '';
-
-        const firstDay = new Date(year, month - 1, 1).getDay();
+        
+        // Obtenemos el día (0=Dom, 1=Lun...)
+        let firstDay = new Date(year, month - 1, 1).getDay(); 
+        
+        // REAJUSTE PARA INICIO EN LUNES:
+        // Si getDay() es 0 (Domingo), lo pasamos a 6. Si es > 0, le restamos 1.
+        // Esto hace que Lunes sea 0 y Domingo 6.
+        const adjustment = firstDay === 0 ? 6 : firstDay - 1;
+        
         const daysInMonth = new Date(year, month, 0).getDate();
-
-        for (let i = 0; i < firstDay; i++) {
+        
+        // Usamos el ajuste para crear los espacios vacíos
+        for (let i = 0; i < adjustment; i++) {
             container.innerHTML += `<div class="calendar-day empty"></div>`;
         }
 
