@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.61.2</title>
+    <title>Visor Pro v10.62.2</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -161,7 +161,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.61.2</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.62.2</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
@@ -203,6 +203,9 @@
             <button class="menu-btn btn-dia" onclick="setDiaFiltro('VIERNES', this)"><span>V</span><span class="count-badge" id="cnt-viernes">0</span></button>
             <button class="menu-btn btn-dia" onclick="setDiaFiltro('SABADO', this)"><span>S</span><span class="count-badge" id="cnt-sabado">0</span></button>
             <button class="menu-btn btn-dia" onclick="setDiaFiltro('DOMINGO', this)"><span>D</span><span class="count-badge" id="cnt-domingo">0</span></button>
+            <button class="menu-btn btn-dark" style="margin-left: 10px; background-color: #0284c7; border-color: #0369a1;" onclick="abrirModalNuevaSucursal()">
+                <i data-lucide="plus-circle"></i> Nueva Sucursal
+            </button>
         </div>
     </div>
     <div class="card">
@@ -508,13 +511,48 @@
     </div>
 </div>
 
+<div id="modal-nueva-sucursal" class="modal">
+    <div class="modal-content" style="max-width: 850px;">
+        <span class="close-btn" onclick="cerrarModal('modal-nueva-sucursal')"><i data-lucide="x"></i></span>
+        <h2 style="margin-top:0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="store"></i> Registrar Nueva Sucursal (v10.61.0)
+        </h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;">
+            <div class="form-group"><label>Clave FR (B):</label><input type="text" id="new-suc-fr" class="edit-combo"></div>
+            <div class="form-group"><label>Clave Simi (C):</label><input type="text" id="new-suc-simi" class="edit-combo"></div>
+            <div class="form-group"><label>Nombre (D):</label><input type="text" id="new-suc-nombre" class="edit-combo"></div>
+            
+            <div class="form-group"><label>Teléfono (G):</label><input type="text" id="new-suc-tel" class="edit-combo"></div>
+            <div class="form-group"><label>Vta Mensual (H):</label><input type="number" id="new-suc-vta" class="edit-combo" value="0"></div>
+            <div class="form-group"><label>Supervisor (I):</label><input type="text" id="new-suc-super" class="edit-combo" list="lista-supervisores-auto"></div>
+            
+            <div class="form-group"><label>Día Pedido (J):</label><input type="text" id="new-suc-dia" class="edit-combo"></div>
+            <div class="form-group"><label>Surtido (K):</label><input type="text" id="new-suc-surtido" class="edit-combo"></div>
+            <div class="form-group"><label>Entrega (L):</label><input type="text" id="new-suc-entrega" class="edit-combo"></div>
+            
+            <div class="form-group"><label>Estadística (M):</label><input type="text" id="new-suc-est" class="edit-combo"></div>
+            <div class="form-group"><label>Correo (N):</label><input type="email" id="new-suc-correo" class="edit-combo"></div>
+            <div class="form-group"><label>P. Óptima (O):</label><input type="number" id="new-suc-popt" class="edit-combo" value="0"></div>
+            
+            <div class="form-group"><label>Spos (P):</label><input type="text" id="new-suc-spos" class="edit-combo"></div>
+            <div class="form-group"><label>Contra (Q):</label><input type="text" id="new-suc-contra" class="edit-combo"></div>
+        </div>
+
+        <div style="text-align: right; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+            <button class="menu-btn" onclick="cerrarModal('modal-nueva-sucursal')">Cancelar</button>
+            <button class="menu-btn btn-dark" onclick="guardarNuevaSucursal()"><i data-lucide="save"></i> Registrar Sucursal</button>
+        </div>
+    </div>
+</div>
+
 <script>
     lucide.createIcons();
      //  
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J3YjNXZTM4RTRoNklCUmEzQ2ZUUnpZWmVVejR2TU56QklmM2tBRDB";
-    const _part3 = "Ic3dSRGNyZEtMU2tRT0JjZXN0RkV0VTR5eDcvZXhlYw";
+    const _part2 = "Y2J4bWVib3lYV21BMU1ZbGhzVEtDRmpEd0FkMkhPcFlQN0hQWXR1";
+    const _part3 = "MFVvbzE2bzBvSUtxSWNTMFJHY1FFR1lzNFFKSV8vZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
@@ -1291,7 +1329,6 @@
                     </button>
                     <span class="texto-spos" onclick="editarSpos(event, '${s.claveSimi}')" style="display:none; font-size: 11px; font-weight: bold; color: var(--primary); cursor: pointer; text-decoration: underline dotted;" title="Click para editar"></span>
                 </td>
-                </td>
                 <td>${s.supervisor}</td>
                 <td style="background-color: #f8fafc; text-align: center;">${s.p_optima}</td>
                 <td style="background-color: #f1f5f9; text-align: center;">${pReal}</td>
@@ -1974,6 +2011,9 @@
             document.getElementById('new-emp-puesto').value = ""; 
             document.getElementById('new-emp-tel').value = ""; 
         }
+        if(id === 'modal-nueva-sucursal') {
+            document.querySelectorAll('#modal-nueva-sucursal input').forEach(input => input.value = '');
+        }
     }
     
     function cancelarEdicion() { abrirModal(sucursalActualId); }
@@ -2124,6 +2164,7 @@
             return false;
         }
     };
+
     function actualizarContadoresDias() {
         const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
         let total = 0;
@@ -2138,53 +2179,109 @@
         const totalConPedido = sucursales.filter(s => s.diaPedido && s.diaPedido.trim() !== "").length;
         document.getElementById('cnt-todos').innerText = totalConPedido;
     }
-    async function editarSpos(e, claveSimi) {
-    if (e) e.stopPropagation();
-    
-    // 1. Validar acceso (opcional, reutiliza tu lógica de ESTADISTICA)
-    if (!sesionEstadisticaActiva) {
-        if (!validarAcceso("ESTADISTICA")) return;
-        sesionEstadisticaActiva = true;
-    }
 
-    const s = sucursales.find(item => item.claveSimi === claveSimi);
-    const valorActual = s.spos || "";
-    
-    // 2. Solicitar nuevo valor
-    const nuevoValor = prompt(`Actualizar SPOS para ${s.nombre}:`, valorActual);
-    
-    if (nuevoValor === null || nuevoValor.trim() === valorActual) return;
+    async function guardarNuevaSucursal() {
+        const datos = {
+            fr: document.getElementById('new-suc-fr').value.trim(),
+            simi: document.getElementById('new-suc-simi').value.trim(),
+            nombre: document.getElementById('new-suc-nombre').value.trim(),
+            tel: document.getElementById('new-suc-tel').value.trim(),
+            vta: document.getElementById('new-suc-vta').value || 0,
+            super: document.getElementById('new-suc-super').value.trim(),
+            dia: document.getElementById('new-suc-dia').value.trim(),
+            surtido: document.getElementById('new-suc-surtido').value.trim(),
+            entrega: document.getElementById('new-suc-entrega').value.trim(),
+            est: document.getElementById('new-suc-est').value.trim(),
+            correo: document.getElementById('new-suc-correo').value.trim(),
+            popt: document.getElementById('new-suc-popt').value || 0,
+            spos: document.getElementById('new-suc-spos').value.trim(),
+            contra: document.getElementById('new-suc-contra').value.trim()
+        };
 
-    try {
-        const status = document.getElementById('mensaje-estado');
-        status.innerHTML = '<i data-lucide="loader" class="spin"></i> Actualizando BD...';
-        lucide.createIcons();
-
-        // 3. Envío a Apps Script (debes manejar la acción "UPDATE_SPOS" en tu backend)
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                accion: "UPDATE_SPOS",
-                claveSimi: claveSimi,
-                spos: nuevoValor.trim(),
-                usuario: usuarioActivo
-            })
-        });
-
-        if (response.ok) {
-            // 4. Actualización local
-            s.spos = nuevoValor.trim();
-            e.target.innerText = s.spos;
-            status.innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Guardado en BD';
-        } else {
-            throw new Error();
+        if (!datos.simi || !datos.nombre) {
+            alert("⚠️ Clave Simi y Nombre son obligatorios.");
+            return;
         }
-    } catch (err) {
-        alert("Error al conectar con la base de datos. Verifica la implementación en Apps Script.");
-        document.getElementById('mensaje-estado').innerText = "Error de sincronización";
+
+        try {
+            const status = document.getElementById('mensaje-estado');
+            status.innerHTML = '<i data-lucide="loader" class="spin"></i> Registrando sucursal...';
+            lucide.createIcons();
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    accion: "AGREGAR_SUCURSAL",
+                    sucursal: datos,
+                    usuario: usuarioActivo
+                })
+            });
+
+            const res = await response.json();
+            if (res.status === "success") {
+                cerrarModal('modal-nueva-sucursal');
+                alert("✅ Sucursal registrada exitosamente en la base de datos.");
+                descargarDatosDeAPI();
+            } else {
+                alert("❌ " + (res.mensaje || "Error desconocido."));
+                status.innerHTML = "Error al guardar";
+            }
+        } catch (e) {
+            alert("❌ Error de conexión al intentar registrar.");
+            console.error(e);
+        }
     }
-    lucide.createIcons();
-}
+
+    async function editarSpos(e, claveSimi) {
+        if (e) e.stopPropagation();
+        
+        if (!sesionEstadisticaActiva) {
+            if (!validarAcceso("ESTADISTICA")) return;
+            sesionEstadisticaActiva = true;
+        }
+
+        const s = sucursales.find(item => item.claveSimi === claveSimi);
+        const valorActual = s.spos || "";
+        
+        const nuevoValor = prompt(`Actualizar SPOS para ${s.nombre}:`, valorActual);
+        
+        if (nuevoValor === null || nuevoValor.trim() === valorActual) return;
+
+        try {
+            const status = document.getElementById('mensaje-estado');
+            status.innerHTML = '<i data-lucide="loader" class="spin"></i> Actualizando BD...';
+            lucide.createIcons();
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    accion: "UPDATE_SPOS",
+                    claveSimi: claveSimi,
+                    spos: nuevoValor.trim(),
+                    usuario: usuarioActivo
+                })
+            });
+
+            if (response.ok) {
+                s.spos = nuevoValor.trim();
+                e.target.innerText = s.spos;
+                status.innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Guardado en BD';
+            } else {
+                throw new Error();
+            }
+        } catch (err) {
+            alert("Error al conectar con la base de datos. Verifica la implementación en Apps Script.");
+            document.getElementById('mensaje-estado').innerText = "Error de sincronización";
+        }
+        lucide.createIcons();
+    }
+
+    function abrirModalNuevaSucursal() {
+        if (validarAcceso("ESTADISTICA")) {
+            document.getElementById('modal-nueva-sucursal').style.display = 'flex';
+            lucide.createIcons();
+        }
+    }
 </script>
 
 </body>
