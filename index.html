@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.31</title>
+    <title>Visor Pro v10.61.0</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -61,8 +61,8 @@
         
         .btn-quitar { background: #fff; color: var(--text-dark); border: 1px solid var(--border); border-radius: 4px; padding: 4px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: 0.2s; }
         .fila-marcada-quitar { opacity: 0.5; background-color: #f8fafc !important; text-decoration: line-through; }
-        .fila-sancion { background-color: #fef08a !important; color: #854d0e; font-weight: bold; } /* Amarillo para sanción */
-        .fila-reactivado { background-color: #dcfce7 !important; color: #15803d; font-weight: bold; } /* Verde para reactivado */
+        .fila-sancion { background-color: #fef08a !important; color: #854d0e; font-weight: bold; }
+        .fila-reactivado { background-color: #dcfce7 !important; color: #15803d; font-weight: bold; }
         .row-nueva { display: none; }
         #mensaje-estado { font-size: 12px; color: var(--text-muted); text-align: right; min-width: 120px; display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
         
@@ -138,12 +138,16 @@
         .celda-nomina { background-color: #fde047 !important; color: #000 !important; font-weight: bold; text-align: center; }
 
         /* Estilos para los botones de filtro por día */
-       .btn-dia {padding: 6px 10px; min-width: 45px; justify-content: center; font-size: 11px; position: relative;  display: flex; flex-direction: column; align-items: center; gap: 2px;}
-    .btn-dia.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-dia {padding: 6px 10px; min-width: 45px; justify-content: center; font-size: 11px; position: relative;  display: flex; flex-direction: column; align-items: center; gap: 2px;}
+        .btn-dia.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
         
         /* Estilo para el número pequeño del contador */
         .count-badge {font-size: 9px;background: rgba(15, 23, 42, 0.1); padding: 1px 5px;border-radius: 10px;font-weight: bold;}
         .btn-dia.active .count-badge {background: rgba(255, 255, 255, 0.2); color: #fff;}
+
+        /* Estilos Adicionales para Pedidos */
+        .th-yellow { background-color: #fef08a !important; color: #854d0e !important; }
+        .input-readonly { background-color: #f1f5f9; cursor: not-allowed; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -157,13 +161,12 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.31</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.61.0</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
-        <button class="menu-btn btn-audit" onclick="abrirModuloAuditorias()"><i data-lucide="calendar-check"></i>Calendario</button>
-        
-        <button class="menu-btn btn-audit" onclick="abrirDetalleAuditoria()"><i data-lucide="clipboard-check"></i>Detalle Aud.</button>
-        
+        <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
+        <button class="menu-btn btn-audit" onclick="abrirModuloAuditorias()"><i data-lucide="calendar-check"></i>Calendario</button>        
+        <button class="menu-btn btn-audit" onclick="abrirDetalleAuditoria()"><i data-lucide="clipboard-check"></i>Detalle Aud.</button>        
         <div class="mov-btn-wrapper">
             <div id="mov-badge-id" class="mov-badge">0</div>
             <button class="menu-btn" style="width: 100%;" onclick="abrirHistorial()"><i data-lucide="bell"></i> Movimientos</button>
@@ -178,6 +181,7 @@
 <div class="action-bar">
     <div class="nav-tabs">
         <button class="tab-btn active" id="tab-visor" onclick="cambiarVista('visor')"><i data-lucide="layout-grid" style="vertical-align: middle;"></i> Visor de Sucursales</button>
+        <button class="tab-btn" id="tab-pedidos" onclick="cambiarVista('pedidos')" style="display: none;"><i data-lucide="shopping-cart" style="vertical-align: middle;"></i> Pedidos</button>
         <button class="tab-btn" id="tab-auditoria" onclick="cambiarVista('auditoria')" style="display: none;"><i data-lucide="calendar" style="vertical-align: middle;"></i> Calendario Auditorías</button>
         <button class="tab-btn" id="tab-detalle-auditoria" onclick="cambiarVista('detalle-auditoria')" style="display: none;"><i data-lucide="clipboard-list" style="vertical-align: middle;"></i> Detalle de auditoría</button>
     </div>
@@ -212,6 +216,67 @@
                     </tr>
                 </thead>
                 <tbody id="tabla-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="vista-pedidos" style="display: none;">
+    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
+        <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar"></i> Semana de Pedido:</label>
+        <input type="week" id="input-semana-pedido" class="edit-combo" style="width: auto; padding: 4px 10px;" title="Selecciona la semana a trabajar">
+        
+        <button class="menu-btn btn-audit" onclick="consultarPedidosSemana()"><i data-lucide="search"></i> Buscar Histórico</button>
+        <button class="menu-btn" onclick="limpiarTablaPedidos()"><i data-lucide="eraser"></i> Limpiar Captura</button>
+
+        <div style="margin-left: auto;">
+            <button class="menu-btn btn-dark" onclick="guardarPedidos()"><i data-lucide="save"></i> Guardar Pedidos</button>
+        </div>
+    </div>
+    <div class="card">
+        <style>
+            #tabla-pedidos-captura { table-layout: fixed; width: 100%; border-collapse: collapse; }
+            #tabla-pedidos-captura th, #tabla-pedidos-captura td { padding: 4px !important; font-size: 11px !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
+            #tabla-pedidos-captura .input-capture { padding: 2px 6px !important; font-size: 11px !important; height: 26px; width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 3px; }
+        </style>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; background: #f8fafc; padding: 8px 15px; border-radius: 6px; border: 1px dashed var(--border); align-items: center; flex-wrap: wrap;">
+            <div class="search-wrapper" style="flex-grow: 1; max-width: 250px;">
+                <i data-lucide="search"></i>
+                <input type="text" id="filtro-tabla-pedidos" class="search-input" placeholder="Día, Sucursal o Clave..." onkeyup="filtrarPedidosVisual()" style="padding: 4px 10px 4px 30px; font-size: 12px; height: 32px;">
+            </div>
+            
+            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: var(--text-dark);">
+                <input type="checkbox" id="chk-con-folio" onchange="filtrarPedidosVisual()" style="accent-color: var(--primary); transform: scale(1.2);"> Solo con Pedido
+            </label>
+
+            <button class="menu-btn" onclick="descargarExcelPedidos()" style="background: #16a34a; color: white; border-color: #15803d; height: 32px;"><i data-lucide="file-spreadsheet"></i> Descargar Excel</button>
+
+            <div style="display: flex; gap: 20px; text-align: right; margin-left: auto;">
+                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Vta Semanal:</strong> <br><span id="tot-vta-semanal" style="color: #bd921c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Pedido:</strong> <br><span id="tot-importe" style="color: #0715d1; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Descuento 35%:</strong> <br><span id="tot-descuento" style="color: #b91c1c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Final:</strong> <br><span id="tot-final" style="color: #15803d; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="tabla-pedidos-captura">
+                <thead>
+                    <tr>
+                        <th style="width: 20%; min-width: 150px;">Sucursal (FR | Nombre)</th>
+                        <th style="width: 10%;">Vta Semanal</th>
+                        <th style="width: 10%;">Estadística</th>
+                        <th style="width: 10%;">Día Pedido</th> 
+                        <th class="th-yellow" style="width: 12%;">Tipo Pedido</th>
+                        <th class="th-yellow" style="width: 14%;">Importe Pedido</th>
+                        <th class="th-yellow" style="width: 12%;">Descuento (35%)</th>
+                        <th class="th-yellow" style="width: 12%;">Importe Final</th>
+                        <th class="th-yellow" style="width: 8%;">Folio</th>
+                </thead>
+                <tbody id="body-pedidos">
+                    <tr><td colspan="9" style="text-align:center; padding:20px;">Cargando información...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -448,8 +513,8 @@
      //  
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J6N0R3c0tHT0p0SVJBM3k0MEU3RUEyVk9ienI0c2pGN19FWHF";
-    const _part3 = "CUlV4UG4tLWFmamVQMGsycmxqMTRySUtGNXU2bEovZXhlYw";
+    const _part2 = "Y2J4aUF1SXhWd2c2UFcxLXB4di1PTjNOTjUtUzE4Q0FRaDdXaEh";
+    const _part3 = "fbHU2amwtRHNlVC1hb3dJb1FablVHRHoyUjMzWXYvZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
@@ -482,14 +547,44 @@
     let detalleAuditoriaGlobal = [];
     let sesionEstadisticaActiva = false; 
     let diaSeleccionado = 'TODOS'; 
-
+    
+    function obtenerSemanaActual() {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+        return d.getUTCFullYear() + "-W" + String(weekNo).padStart(2, '0');
+    }
+    
     window.onload = () => {
         const today = new Date();
         const monthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('filtro-mes-auditoria').value = monthStr;
         document.getElementById('filtro-mes-detalle').value = monthStr; 
+        
+        const inputSemana = document.getElementById('input-semana-pedido');
+        if (inputSemana) inputSemana.value = obtenerSemanaActual();
+
         descargarDatosDeAPI();
     };
+
+    function formatearMonedaInput(input) {
+        let val = parseFloat(input.value.replace(/[^0-9.-]+/g,""));
+        if (isNaN(val) || val === 0) {
+            input.value = "";
+        } else {
+            input.value = "$ " + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+    }
+
+    function limpiarFormatoInput(input) {
+        let val = parseFloat(input.value.replace(/[^0-9.-]+/g,""));
+        if (isNaN(val) || val === 0) {
+            input.value = "";
+        } else {
+            input.value = val;
+        }
+    }
 
     function formatVentasCompactas(num) {
         if (!num || num === 0) return '$0';
@@ -602,6 +697,7 @@
             actualizarDataLists();
             actualizarContadoresDias();
             mostrarSucursales(sucursales);
+            renderizarTablaPedidos(sucursales);
             renderizarListasAuditoria();
             renderizarDetalleAuditoria();
             
@@ -625,7 +721,7 @@
             siHayUnidadSeleccionadaRefrescar();
 
         } catch (e) { 
-            status.innerHTML = '<i data-lucide="alert-circle"></i> Error'; 
+            status.innerHTML = '<i data-lucide="alert-circle"></i> Error de conexión'; 
             lucide.createIcons();
         }
     }
@@ -666,10 +762,12 @@
 
     function cambiarVista(vista) {
         document.getElementById('vista-visor').style.display = vista === 'visor' ? 'block' : 'none';
+        document.getElementById('vista-pedidos').style.display = vista === 'pedidos' ? 'block' : 'none';
         document.getElementById('vista-auditoria').style.display = vista === 'auditoria' ? 'block' : 'none';
         document.getElementById('vista-detalle-auditoria').style.display = vista === 'detalle-auditoria' ? 'block' : 'none';
         
         document.getElementById('tab-visor').classList.toggle('active', vista === 'visor');
+        document.getElementById('tab-pedidos').classList.toggle('active', vista === 'pedidos');
         document.getElementById('tab-auditoria').classList.toggle('active', vista === 'auditoria');
         document.getElementById('tab-detalle-auditoria').classList.toggle('active', vista === 'detalle-auditoria');
     }
@@ -690,6 +788,25 @@
                 await cargarDetallePesado();
             }
             renderizarDetalleAuditoria();
+        }
+    }
+    
+    function abrirModuloPedidos() {
+        const pass = prompt("Ingresa tu contraseña de acceso para Pedidos:");
+        if (!pass) return;
+        
+        const usuario = rolesGlobal.find(r => r.password === pass);
+        if (!usuario) {
+            alert("❌ Contraseña incorrecta.");
+            return;
+        }
+        
+        if (usuario.permisos.includes("TODO") || usuario.permisos.includes("VENTAS") || usuario.permisos.includes("ESTADISTICA")) {
+            usuarioActivo = usuario.rol; 
+            document.getElementById('tab-pedidos').style.display = 'inline-block';
+            cambiarVista('pedidos');
+        } else {
+            alert("⛔ Acceso denegado. Se requiere cuenta de VENTAS o ESTADÍSTICA.");
         }
     }
     
@@ -730,7 +847,6 @@
                 ? '<span class="tag-alta" style="display:inline-flex; align-items:center; gap:4px; font-size:11px;"><i data-lucide="check-circle" style="width:14px; height:14px;"></i> SÍ</span>' 
                 : '<span class="tag-baja" style="display:inline-flex; align-items:center; gap:4px; font-size:11px;"><i data-lucide="x-circle" style="width:14px; height:14px;"></i> NO</span>';
 
-
             const claseFila = auditada ? 'fila-clickable' : '';
             const eventoClick = auditada ? `onclick="abrirModalHallazgos('${s.claveSimi}')"` : '';
 
@@ -767,7 +883,6 @@
 
     function obtenerEstadoSucursalMes(sucursal, mesSeleccionado) {
         return auditoriasGlobal.some(a => {
-            // RESTRICCIÓN ESTRICTA DE ESTADO PROGRAMADA
             if(a.claveSimi !== sucursal.claveSimi || a.estado !== 'Programada' || !a.fechaProg) return false;
             const d = new Date(a.fechaProg);
             const aMes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -815,7 +930,6 @@
         const mesSeleccionado = obtenerMesSeleccionado();
         const filtroEstado = obtenerFiltroEstadoSeleccionado();
         
-        // RESTRICCIÓN ESTRICTA: SOLO MOSTRAR PROGRAMADAS
         const programadas = auditoriasGlobal.filter(a => {
             if(a.estado !== "Programada" || !a.fechaProg) return false;
             const d = new Date(a.fechaProg);
@@ -826,7 +940,6 @@
         tbodyProg.innerHTML = programadas.length === 0 ? '<tr><td colspan="2" style="text-align:center;">No hay programadas para este mes</td></tr>' : 
             programadas.map(a => `<tr><td><strong>${a.sucursal}</strong></td><td>${formatDate(a.fechaProg, true)}</td></tr>`).join('');
 
-        // --- NUEVA LÓGICA: INSERTAR BOTÓN DE DESCANSO ---
         let htmlDescanso = '';
         if (filtroEstado === 'all' || filtroEstado === 'pending') {
             htmlDescanso = `
@@ -852,7 +965,6 @@
         if (contadoresDiv) {
             const conteoPorAuditor = {};
             programadas.forEach(a => {
-                // Mejora: Omitimos los "DESCANSOS" para que no sumen al contador del auditor
                 if (a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO') return; 
                 const auditor = a.auditor && a.auditor.trim() !== '' ? a.auditor.trim() : 'Sin asignar';
                 conteoPorAuditor[auditor] = (conteoPorAuditor[auditor] || 0) + 1;
@@ -881,21 +993,15 @@
         if (!mesVal) return;
         
         const [year, month] = mesVal.split('-').map(Number);
-        // --- 4. RENDERIZAR GRILLA ---
         const container = document.getElementById('calendario-dias');
         container.innerHTML = '';
         
-        // Obtenemos el día (0=Dom, 1=Lun...)
         let firstDay = new Date(year, month - 1, 1).getDay(); 
         
-        // REAJUSTE PARA INICIO EN LUNES:
-        // Si getDay() es 0 (Domingo), lo pasamos a 6. Si es > 0, le restamos 1.
-        // Esto hace que Lunes sea 0 y Domingo 6.
         const adjustment = firstDay === 0 ? 6 : firstDay - 1;
         
         const daysInMonth = new Date(year, month, 0).getDate();
         
-        // Usamos el ajuste para crear los espacios vacíos
         for (let i = 0; i < adjustment; i++) {
             container.innerHTML += `<div class="calendar-day empty"></div>`;
         }
@@ -908,7 +1014,6 @@
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // RESTRICCIÓN ESTRICTA: SOLO MOSTRAR PROGRAMADAS
             const auditoriasDelDia = auditoriasGlobal.filter(a => {
                 if (a.estado !== "Programada" || !a.fechaProg) return false;
                 const aDate = new Date(a.fechaProg);
@@ -921,7 +1026,6 @@
                 const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
                 const cls = isPernocta && !isDescanso ? 'audit-event pernocta' : 'audit-event';
                 
-                // LÓGICA DE ICONOS Y COLOR PARA DESCANSO
                 const iconHtml = isDescanso ? '<i data-lucide="coffee" style="width:10px; height:10px;"></i>' : (isPernocta ? '<i data-lucide="moon" style="width:10px; height:10px;"></i>' : '<i data-lucide="user" style="width:10px; height:10px;"></i>');
                 const customStyle = isDescanso ? 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;' : '';
 
@@ -1009,7 +1113,6 @@
             }
         }
 
-        // LÓGICA DE SELECCIÓN PARA EL DESCANSO
         let suc = sucursales.find(s => s.claveSimi === claveSimi);
         if (claveSimi === 'DESC') {
             suc = { claveSimi: 'DESC', nombre: 'DESCANSO' };
@@ -1020,7 +1123,6 @@
         sucursalAuditoriaSeleccionada = suc;
         document.getElementById('lbl-unidad-seleccionada').innerText = `Unidad: ${suc.nombre}`;
 
-        // CORRECCIÓN: Filtrar para que NO aparezcan las auditorías canceladas
         const historial = auditoriasGlobal
             .filter(a => a.claveSimi === claveSimi && a.estado !== 'Cancelada')
             .sort((a,b) => new Date(b.fechaProg) - new Date(a.fechaProg));
@@ -1202,6 +1304,303 @@
         lucide.createIcons();
     }
 
+    function renderizarTablaPedidos(lista) {
+        const tbody = document.getElementById('body-pedidos');
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">No hay sucursales para mostrar.</td></tr>';
+            actualizarTotalesPedido(); 
+            return;
+        }
+        tbody.innerHTML = lista.map(s => `
+            <tr data-clavesimi="${s.claveSimi}" data-clavefr="${s.claveFr}" data-nombre="${s.nombre}" data-venta="${s.vtaMensual}" data-dia="${s.diaPedido}" data-orig-importe="0" data-orig-folio="">
+                <td><strong>${s.claveFr} | ${s.nombre}</strong></td>
+                <td style="font-weight: 500;">$ ${(s.vtaMensual / 4).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td> 
+                <td style="text-align: center;">${s.estadistica}</td>
+                <td style="text-align: center; font-weight: bold; color: var(--text-muted);">${s.diaPedido}</td>
+                <td>
+                    <select class="input-capture" style="font-weight:bold; cursor:pointer;">
+                        <option value="NORMAL" selected>NORMAL</option>
+                        <option value="EMERGENTE">EMERGENTE</option>
+                    </select>
+                </td>
+                <td><input type="text" class="input-capture" oninput="calcularDescuento(this); actualizarTotalesPedido()" onblur="formatearMonedaInput(this)" onfocus="limpiarFormatoInput(this)" placeholder="$ 0.00"></td>
+                <td><input type="text" class="input-capture input-readonly" readonly value="$ 0.00" data-valor="0" tabindex="-1" style="color: #b91c1c;"></td>
+                <td><input type="text" class="input-capture input-readonly" readonly value="$ 0.00" data-valor="0" tabindex="-1" style="color: #15803d; font-weight:bold;"></td>
+                <td><input type="text" class="input-capture" placeholder="Folio" style="text-align: center;" oninput="actualizarTotalesPedido(); if(document.getElementById('chk-con-folio').checked) filtrarPedidosVisual();"></td>
+            </tr>
+        `).join('');
+        actualizarTotalesPedido();
+    }
+
+    function calcularDescuento(input) {
+        const fila = input.closest('tr');
+        const importe = parseFloat(input.value.replace(/[^0-9.-]+/g,"")) || 0;
+        const campoDescuento = fila.cells[6].querySelector('input'); 
+        const campoFinal = fila.cells[7].querySelector('input');     
+        
+        const valorDescuento = importe * 0.35;
+        const valorFinal = importe * 0.65;
+
+        campoDescuento.value = "-$ " + valorDescuento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        campoDescuento.dataset.valor = valorDescuento;
+
+        campoFinal.value = "$ " + valorFinal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        campoFinal.dataset.valor = valorFinal;
+    }
+
+    function actualizarTotalesPedido() {
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        let totalImporte = 0;
+        let totalDescuento = 0;
+        let totalFinal = 0;
+        let totalVtaSemanal = 0;
+
+        filas.forEach(f => {
+            const inputImporte = f.cells[5]?.querySelector('input');
+            const inputDescuento = f.cells[6]?.querySelector('input');
+            const inputFinal = f.cells[7]?.querySelector('input');
+            const inputFolio = f.cells[8]?.querySelector('input'); 
+            
+            if (inputImporte && inputDescuento && inputFinal && inputFolio) {
+                const importeVal = parseFloat(inputImporte.value.replace(/[^0-9.-]+/g,"")) || 0;
+                const descuentoVal = parseFloat(inputDescuento.dataset.valor) || 0;
+                const finalVal = parseFloat(inputFinal.dataset.valor) || 0;
+                const folioVal = inputFolio.value.trim();
+
+                if (folioVal !== "") { f.style.backgroundColor = '#e0f2fe'; } 
+                else { f.style.backgroundColor = ''; }
+
+                if (f.style.display !== 'none') {
+                    totalImporte += importeVal;
+                    totalDescuento += descuentoVal;
+                    totalFinal += finalVal;
+
+                    if (importeVal > 0 || folioVal !== "") {
+                        const ventaMensual = parseFloat(f.dataset.venta) || 0;
+                        totalVtaSemanal += (ventaMensual / 4);
+                    }
+                }
+            }
+        });
+
+        document.getElementById('tot-vta-semanal').innerText = '$ ' + totalVtaSemanal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('tot-importe').innerText = '$ ' + totalImporte.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('tot-descuento').innerText = '-$ ' + totalDescuento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('tot-final').innerText = '$ ' + totalFinal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    
+    function filtrarPedidosVisual() {
+        const texto = normalizarTexto(document.getElementById('filtro-tabla-pedidos').value);
+        const soloConFolio = document.getElementById('chk-con-folio').checked; 
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        
+        filas.forEach(f => {
+            const contenidoFila = normalizarTexto(f.innerText + " " + f.dataset.dia);
+            let cumpleTexto = contenidoFila.includes(texto);
+            
+            let cumpleFolio = true;
+            if (soloConFolio) {
+                const inputImporte = f.cells[5]?.querySelector('input');
+                const inputFolio = f.cells[8]?.querySelector('input'); 
+                
+                const tieneImporte = inputImporte && (parseFloat(inputImporte.value.replace(/[^0-9.-]+/g,"")) || 0) > 0;
+                const tieneFolio = inputFolio && inputFolio.value.trim() !== "";
+                
+                cumpleFolio = tieneImporte || tieneFolio;
+            }
+
+            f.style.display = (cumpleTexto && cumpleFolio) ? '' : 'none';
+        });
+        actualizarTotalesPedido();
+    }
+    
+    function descargarExcelPedidos() {
+        if (!validarAcceso("EXCEL")) return;
+        const semana = document.getElementById('input-semana-pedido').value;
+        if (!semana) { alert("⚠️ Selecciona una semana válida arriba."); return; }
+
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        const dataExcel = [];
+
+        filas.forEach(f => {
+            if (f.style.display === 'none') return; 
+
+            const inputs = f.querySelectorAll('.input-capture');
+            if (inputs.length < 5) return; 
+
+            const importe = parseFloat(inputs[1].value.replace(/[^0-9.-]+/g,"")) || 0;
+            const desc = parseFloat(inputs[2].dataset.valor) || 0;
+            const final = parseFloat(inputs[3].dataset.valor) || 0;
+            const folio = inputs[4].value.trim();
+
+            if (importe > 0 || folio !== "") {
+                dataExcel.push({
+                    "Semana": semana,
+                    "Día Entrega": f.dataset.dia || "N/D",
+                    "Clave FR": f.dataset.clavefr,
+                    "Sucursal": f.dataset.nombre,
+                    "Tipo Pedido": inputs[0].value,
+                    "Importe Pedido": importe,
+                    "Descuento (35%)": desc,
+                    "Importe Final": final,
+                    "Folio": folio
+                });
+            }
+        });
+
+        if (dataExcel.length === 0) { 
+            alert("ℹ️ No hay pedidos capturados (mayores a $0 o con folio) en la vista actual para descargar."); 
+            return; 
+        }
+
+        const ws = XLSX.utils.json_to_sheet(dataExcel);
+        const wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
+        XLSX.writeFile(wb, `Pedidos_${semana}.xlsx`);
+    }
+    
+    async function guardarPedidos() {
+        const semana = document.getElementById('input-semana-pedido').value;
+        if(!semana) { alert("⚠️ Selecciona una semana válida antes de guardar."); return; }
+
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        const pedidosAGuardar = [];
+
+        filas.forEach(f => {
+            if (!f.dataset.clavesimi) return; 
+            
+            const inputs = f.querySelectorAll('.input-capture');
+            if (inputs.length < 5) return; 
+
+            const tipoPedido = inputs[0].value; 
+            const importe = parseFloat(inputs[1].value.replace(/[^0-9.-]+/g,"")) || 0;
+            const folio = inputs[4].value.trim(); 
+            
+            const origTipo = f.dataset.origTipo || "NORMAL";
+            const origImporte = parseFloat(f.dataset.origImporte) || 0;
+            const origFolio = f.dataset.origFolio || "";
+
+            if ((importe > 0 || folio !== "") && (importe !== origImporte || folio !== origFolio || tipoPedido !== origTipo)) {
+                pedidosAGuardar.push({
+                    claveSimi: f.dataset.clavesimi, 
+                    sucursal: f.dataset.nombre,
+                    ventaMensual: parseFloat(f.dataset.venta) || 0,
+                    tipoPedido: tipoPedido, 
+                    importe: importe,
+                    descuento: parseFloat(inputs[2].dataset.valor) || 0,
+                    folio: folio,
+                    diaPedido: f.dataset.dia, // Enviamos el día al servidor
+                    _filaElement: f 
+                });
+            }
+        });
+
+        if(pedidosAGuardar.length === 0) {
+            alert("ℹ️ No hay información nueva o modificada para guardar."); return;
+        }
+
+        try {
+            document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Guardando...';
+            lucide.createIcons();
+            
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    accion: "GUARDAR_PEDIDOS", 
+                    semana: semana, 
+                    usuario: usuarioActivo,
+                    pedidos: pedidosAGuardar 
+                })
+            });
+            
+            pedidosAGuardar.forEach(p => {
+                if (p._filaElement) {
+                    p._filaElement.dataset.origTipo = p.tipoPedido;
+                    p._filaElement.dataset.origImporte = p.importe;
+                    p._filaElement.dataset.origFolio = p.folio;
+                }
+            });
+
+            document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Guardado exitoso';
+            lucide.createIcons();
+            alert("✅ Pedidos de la " + semana + " guardados correctamente.");
+        } catch(e) {
+            alert("❌ Error al guardar.");
+        }
+    }
+
+    async function consultarPedidosSemana() {
+        const semana = document.getElementById('input-semana-pedido').value;
+        if(!semana) return;
+
+        document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Buscando histórico...';
+        lucide.createIcons();
+
+        try {
+            const response = await fetch(API_URL + "?accion=GET_PEDIDOS_SEMANA&semana=" + semana);
+            const data = await response.json();
+            
+            if(data.pedidos && data.pedidos.length > 0) {
+                rellenarTablaConHistorico(data.pedidos);
+                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Histórico cargado';
+                alert("✅ Se cargó el histórico de la " + semana);
+            } else {
+                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="info"></i> Semana vacía';
+                alert("ℹ️ No hay pedidos registrados en la " + semana + ". Puedes comenzar a capturar.");
+                limpiarTablaPedidos();
+            }
+            lucide.createIcons();
+        } catch(e) {
+            alert("❌ Error al consultar el histórico. Revisa que tu AppScript esté desplegado en una Nueva Implementación.");
+            document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="alert-circle" style="color:#ef4444;"></i> Error';
+            lucide.createIcons();
+        }
+    }
+
+    function rellenarTablaConHistorico(historico) {
+        limpiarTablaPedidos(); 
+        
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        filas.forEach(f => {
+            const claveSimi = f.dataset.clavesimi; 
+            if(!claveSimi) return;
+
+            const pedido = historico.find(p => p.claveSimi == claveSimi); 
+            
+            if (pedido) {
+                const inputs = f.querySelectorAll('.input-capture');
+                
+                const tipo = pedido.tipoPedido || "NORMAL";
+                inputs[0].value = tipo;
+                
+                const importe = pedido.importe || 0;
+                if(importe > 0) {
+                    inputs[1].value = "$ " + importe.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    calcularDescuento(inputs[1]);
+                } else {
+                    inputs[1].value = "";
+                }
+                
+                const folio = pedido.folio || "";
+                inputs[4].value = folio; 
+
+                f.dataset.origTipo = tipo;
+                f.dataset.origImporte = importe;
+                f.dataset.origFolio = folio;
+            } else {
+                f.dataset.origTipo = "NORMAL";
+                f.dataset.origImporte = "0";
+                f.dataset.origFolio = "";
+            }
+        });
+        actualizarTotalesPedido();
+    }
+    
+    function limpiarTablaPedidos() {
+        renderizarTablaPedidos(sucursales);
+    }
+    
+    // ----------------------------------------
     function abrirHistorial() {
         const tbody = document.getElementById('tbody-historial');
         document.getElementById('chk-all').checked = false; 
@@ -1289,6 +1688,7 @@
         });
 
         mostrarSucursales(filtradas);
+        renderizarTablaPedidos(filtradas);
     }
 
     function solicitarCargaCSV() { if (validarAcceso("VENTAS")) document.getElementById('csv-file-input').click(); }
@@ -1335,7 +1735,6 @@
             if (e.puesto.includes('(SANCIÓN)')) claseExtra = 'fila-sancion';
             if (e.puesto.includes('(REACTIVADO)')) claseExtra = 'fila-reactivado';
 
-            // CORRECCIÓN: Parseo de fechaModif a prueba de fallos
             let fModif = e.fechaModif ? String(e.fechaModif) : '-';
             let dModif = new Date(fModif);
             if (fModif !== '-' && !isNaN(dModif.getTime())) {
@@ -1442,17 +1841,14 @@
         const s = sucursales.find(item => item.id === sucursalActualId);
         const filas = Array.from(document.querySelectorAll('#tbody-plantilla tr'));
         
-        // --- NUEVA MEJORA: VALIDACIÓN DE MOTIVO OBLIGATORIO ---
         for (let f of filas) {
             const selectMotivo = f.querySelector('.motivo-baja');
-            // Si el combo está visible (se presionó el botón de acción) y sigue en "Motivo..." (vacío)
             if (selectMotivo && selectMotivo.style.display !== 'none' && selectMotivo.value === '') {
                 const empNombre = (f.cells[1].querySelector('input')?.value || f.cells[1].innerText).trim();
                 alert(`⚠️ Acción requerida:\n\nDebes seleccionar un motivo de baja/estatus para el empleado:\n👤 ${empNombre}`);
-                return; // 🛑 ESTO DETIENE EL PROCESO Y NO PERMITE GUARDAR
+                return;
             }
         }
-        // ------------------------------------------------------
         
         let datosPlantilla = filas.map(f => {
             const selectMotivo = f.querySelector('.motivo-baja');
@@ -1497,7 +1893,7 @@
                 quitar: seVa,
                 modificado: fueModificado,
                 detalleHistorial: textoDetalleCambio.join(', '),
-                fechaModif: new Date().toISOString() // CORRECCIÓN: Para forzar el envío del timestamp
+                fechaModif: new Date().toISOString() 
             };
         });
 
@@ -1515,7 +1911,7 @@
                 telefono: newTel.trim(), 
                 quitar: false,
                 modificado: true,
-                fechaModif: new Date().toISOString() // CORRECCIÓN: Para forzar el envío del timestamp
+                fechaModif: new Date().toISOString() 
             });
         }
 
