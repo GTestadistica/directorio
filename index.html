@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.61.0</title>
+    <title>Visor Pro v10.61.2</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -161,7 +161,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.61.0</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.61.2</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
@@ -513,8 +513,8 @@
      //  
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J4aUF1SXhWd2c2UFcxLXB4di1PTjNOTjUtUzE4Q0FRaDdXaEh";
-    const _part3 = "fbHU2amwtRHNlVC1hb3dJb1FablVHRHoyUjMzWXYvZXhlYw";
+    const _part2 = "Y2J3YjNXZTM4RTRoNklCUmEzQ2ZUUnpZWmVVejR2TU56QklmM2tBRDB";
+    const _part3 = "Ic3dSRGNyZEtMU2tRT0JjZXN0RkV0VTR5eDcvZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
@@ -1286,10 +1286,11 @@
                 <td>${i+1}</td>
                 <td>${s.nombre}</td>
                 <td style="text-align: center;" class="celda-spos">
-                    <button class="btn-ojo" onclick="mostrarSpos(event, '${s.claveSimi}', this)" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" title="Ver Spos">
+                    <button class="btn-ojo" onclick="mostrarSpos(event, '${s.claveSimi}', this)" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" title="Ver">
                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                     </button>
-                    <span class="texto-spos" style="display:none; font-size: 11px; font-weight: bold; color: var(--primary);"></span>
+                    <span class="texto-spos" onclick="editarSpos(event, '${s.claveSimi}')" style="display:none; font-size: 11px; font-weight: bold; color: var(--primary); cursor: pointer; text-decoration: underline dotted;" title="Click para editar"></span>
+                </td>
                 </td>
                 <td>${s.supervisor}</td>
                 <td style="background-color: #f8fafc; text-align: center;">${s.p_optima}</td>
@@ -2137,6 +2138,53 @@
         const totalConPedido = sucursales.filter(s => s.diaPedido && s.diaPedido.trim() !== "").length;
         document.getElementById('cnt-todos').innerText = totalConPedido;
     }
+    async function editarSpos(e, claveSimi) {
+    if (e) e.stopPropagation();
+    
+    // 1. Validar acceso (opcional, reutiliza tu lógica de ESTADISTICA)
+    if (!sesionEstadisticaActiva) {
+        if (!validarAcceso("ESTADISTICA")) return;
+        sesionEstadisticaActiva = true;
+    }
+
+    const s = sucursales.find(item => item.claveSimi === claveSimi);
+    const valorActual = s.spos || "";
+    
+    // 2. Solicitar nuevo valor
+    const nuevoValor = prompt(`Actualizar SPOS para ${s.nombre}:`, valorActual);
+    
+    if (nuevoValor === null || nuevoValor.trim() === valorActual) return;
+
+    try {
+        const status = document.getElementById('mensaje-estado');
+        status.innerHTML = '<i data-lucide="loader" class="spin"></i> Actualizando BD...';
+        lucide.createIcons();
+
+        // 3. Envío a Apps Script (debes manejar la acción "UPDATE_SPOS" en tu backend)
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                accion: "UPDATE_SPOS",
+                claveSimi: claveSimi,
+                spos: nuevoValor.trim(),
+                usuario: usuarioActivo
+            })
+        });
+
+        if (response.ok) {
+            // 4. Actualización local
+            s.spos = nuevoValor.trim();
+            e.target.innerText = s.spos;
+            status.innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Guardado en BD';
+        } else {
+            throw new Error();
+        }
+    } catch (err) {
+        alert("Error al conectar con la base de datos. Verifica la implementación en Apps Script.");
+        document.getElementById('mensaje-estado').innerText = "Error de sincronización";
+    }
+    lucide.createIcons();
+}
 </script>
 
 </body>
