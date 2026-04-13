@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Sucursales v1.06</title>
+    
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+    
+    <style>
+        /* --- ESTILOS DEL MODAL PDF --- */
+        #pdf-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .pdf-modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 900px;
+            height: 85vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        .pdf-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+        }
+        .btn-close-modal {
+            background: none;
+            border: none;
+            color: var(--secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .btn-close-modal:hover {
+            background: #fee2e2;
+        }
+        #pdf-iframe {
+            flex-grow: 1;
+            width: 100%;
+            border: none;
+            background: #e2e8f0;
+        }
+        
+        :root {
+            --primary: #0f172a; 
+            --secondary: #b91c1c;
+            --light: #f8fafc;
+            --border: #cbd5e1;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --header-height: 45px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--light); 
+            margin: 0; 
+            color: var(--text-dark); 
+        }
+        
+        /* Login */
+        #login-screen { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            background: linear-gradient(179deg, #11f5d7 0%, #5c5ba7 100%); 
+        }
+        .login-card { 
+            background: white; 
+            padding: 35px; 
+            border-radius: 12px; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); 
+            width: 100%; 
+            max-width: 380px; 
+        }
+
+        #main-app { display: none; padding-top: var(--header-height); }
+
+        /* Barra Superior Fija */
+        .top-menu { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: #fff; 
+            padding: 0 25px; 
+            border-bottom: 2px solid var(--primary); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .top-menu-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .version-tag {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* Layout Dinámico */
+        .app-container { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 20px; 
+            padding: 20px; 
+            max-width: 1500px; 
+            margin: 0 auto; 
+            transition: all 0.3s ease;
+        }
+
+        .layout-with-sidebar {
+            grid-template-columns: 1fr 320px;
+        }
+        
+        .card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .locked { opacity: 0.6; pointer-events: none; background: #f1f5f9; }
+        
+        #welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        #capture-area, #agua-area, #degustacion-area { display: none; }
+
+        /* Historial */
+        .sidebar { 
+            display: none;
+            background: #fff; 
+            border-radius: 8px; 
+            border: 1px solid var(--border); 
+            padding: 15px; 
+            height: calc(100vh - 120px); 
+            overflow-y: auto; 
+            position: sticky;
+            top: 90px;
+        }
+        .lote-item { padding: 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 4px; }
+        .lote-item:hover { background: #f0f7ff; color: var(--primary); }
+        .lote-item b { color: var(--primary); font-size: 14px; }
+
+        .grid-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+        label { font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: block; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8fafc; padding: 12px; text-align: left; border: 1px solid var(--border); font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        td { padding: 10px; border: 1px solid var(--border); }
+        .subtotales { font-weight: bold; background: #f1f5f9; }
+
+        input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 13px; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); }
+        input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
+
+        .menu-btn { background: #fff; border: 1px solid var(--border); padding: 1px 5px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 2px; font-size: 10px; transition: 0.2s; }
+        .menu-btn:hover { background: #f1f5f9; }
+        .btn-dark { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-success { background: #10b981; color: #fff; border-color: #10b981; }
+        .btn-info { background: #0284c7; color: #fff; border-color: #0284c7; }
+        .btn-warning { background: #ffd58d; color: #181818; border-color: #00000000; }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #badge-folio { background: #fef08a; color: #854d0e; padding: 10px; border-radius: 6px; font-weight: bold; border: 1px solid #facc15; margin-bottom: 15px; display: none; }
+        
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Estilos Tablas Información Degustación */
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; background-color: #d0edff; color: #000; border: 1px solid #000; }
+        .info-table th { background-color: #f1f1f1; color: #000; border: 1px solid #dddcdc; padding: 8px; text-transform: none; font-weight: bold; font-size: 13px; }
+        .info-table td { border: 1px solid #dddcdc; padding: 2px; }
+        .info-header-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #000; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-card">
+        <h2 style="text-align:center; color: var(--primary); margin-bottom: 25px;">Acceso Unidades</h2>
+        <label>Seleccionar Unidad:</label>
+        <select id="login-unidad" style="margin-bottom: 20px;"></select>
+        <label>Contraseña de Unidad:</label>
+        <input type="password" id="login-pass" placeholder="****" style="margin-bottom: 25px;">
+        <button class="btn-dark menu-btn" style="width: 100%; justify-content: center;" onclick="validarAcceso()">ENTRAR <i data-lucide="log-in"></i></button>
+    </div>
+</div>
+
+<div id="main-app">
+    <div class="top-menu">
+        <div class="top-menu-left">
+            <h3 id="display-unidad-nombre" style="margin:0; font-size: 17px; color: var(--primary); display: flex; align-items: center; gap: 10px;"></h3>
+            <span class="version-tag">1.06</span>
+            
+            <button class="menu-btn btn-success" id="btn-sync-db" onclick="sincronizarBaseDatos()" title="Actualizar datos de la nube">
+                <i data-lucide="refresh-cw"></i> SYNC DB
+            </button>
+
+            <button class="menu-btn btn-dark" onclick="abrirPestañaCaptura()">
+                <i data-lucide="triangle-alert"></i> CADUCIDADES
+            </button>
+            <button class="menu-btn btn-info" onclick="abrirPestañaAgua()">
+                <i data-lucide="droplet"></i> AGUA
+            </button>
+            <button class="menu-btn btn-warning" onclick="abrirPestañaDegustacion()">
+                <i data-lucide="soup"></i> DEGUSTACIÓN
+            </button>
+        </div>
+        <button class="menu-btn" onclick="location.reload()"><i data-lucide="log-out"></i> SALIR</button>
+    </div>
+
+    <div id="app-container" class="app-container">
+        <div class="main-content">
+            
+            <div id="welcome-screen">
+                <i data-lucide="package-search" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.2;"></i>
+                <h2 style="margin-bottom: 10px;">Panel de Gestión</h2>
+                <p>Da click en alguna opción del menú para iniciar.</p>
+            </div>
+
+            <div id="capture-area">
+                <div id="badge-folio"></div>
+                <div class="card" id="card-registro">
+                    <h4 style="margin:0 0 15px 0; color: var(--secondary); display: flex; align-items: center; gap: 8px;"><i data-lucide="plus-circle"></i> DATOS DE PRODUCTO</h4>
+                    <div style="margin-bottom: 15px;">
+                        <label>Buscador Rápido:</label>
+                        <input type="text" id="busqueda-prod" placeholder="Escribe código o nombre..." onkeyup="filtrarProductos(this.value)" style="background: #f0f7ff; border-color: var(--primary);">
+                    </div>
+                    <div class="grid-form">
+                        <div><label>Producto:</label><select id="select-producto"></select></div>
+                        <div><label>Caducidad:</label><input type="month" id="input-fecha-cad"></div>
+                        <div><label>Existencia:</label><input type="number" id="input-existencia" value="0"></div>
+                        <div><label>Salida:</label><input type="number" id="input-salida" value="0"></div>
+                        <button class="menu-btn btn-dark" onclick="agregarATabla()">AGREGAR</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <table id="tabla-caducidades">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center;">CÓDIGO</th>
+                                <th>DESCRIPCIÓN</th>
+                                <th style="text-align:center;">CAD</th>
+                                <th style="text-align:center;">EXIST</th>
+                                <th style="text-align:center;">SALIDA</th>
+                                <th style="text-align:right;">PRECIO</th>
+                                <th style="text-align:right;">TOTAL</th>
+                                <th id="th-estatus" style="display:none;">ESTATUS</th>
+                                <th style="text-align:center;">ACC</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-caducidades"></tbody>
+                        <tfoot id="foot-caducidades"></tfoot>
+                    </table>
+
+                    <div style="margin-top: 25px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                        <button id="btn-unlock" class="menu-btn" style="display:none; color: var(--secondary);" onclick="habilitarEdicionAdmin()"><i data-lucide="lock"></i> EDITAR ESTATUS</button>
+                        <button id="btn-pdf" class="menu-btn btn-disabled" disabled onclick="descargarPDF()"><i data-lucide="file-text"></i> PDF</button>
+                        <button id="btn-guardar" class="menu-btn btn-success" onclick="sincronizarLote()"><i data-lucide="save"></i> GUARDAR LOTE</button>
+                        <button id="btn-update-estatus" class="menu-btn btn-success" style="display:none;" onclick="guardarCambiosEstatus()"><i data-lucide="check-circle"></i> GUARDAR CAMBIOS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="agua-area">
+                <div class="card" style="max-width: 950px;">
+                    <h4 style="margin:0 0 15px 0; color: #0284c7; display: flex; align-items: center; gap: 8px;"><i data-lucide="droplet"></i> RECEPCIÓN DE AGUA</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <label>Fecha Ticket:</label>
+                            <input type="date" id="agua-fecha-ticket">
+                        </div>
+                        <div>
+                            <label>Remisión:</label>
+                            <input type="text" id="agua-remision" placeholder="Ej: 353-25520400233">
+                        </div>
+                    </div>
+
+                    <table id="tabla-agua" style="margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th>PRODUCTO</th>
+                                <th style="width: 100px; text-align:center;">CAJAS</th>
+                                <th style="width: 100px; text-align:center;">PIEZAS</th>
+                                <th style="width: 120px; text-align:right;">COSTO CAJA</th>
+                                <th style="width: 120px; text-align:right;">COSTO TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>AGUA 600</b></td>
+                                <td><input type="number" id="cajas-600" value="0" min="0" oninput="calcularAgua()" style="text-align:center;"></td>
+                                <td><input type="number" id="piezas-600" value="0" readonly style="text-align:center; font-weight:bold;"></td>
+                                <td><input type="number" id="costo-600" value="37.56" step="0.01" oninput="calcularAgua()" style="text-align:right;"></td>
+                                <td><input type="text" id="total-600" value="$0.00" readonly style="text-align:right; font-weight:bold; color:var(--primary);"></td>
+                            </tr>
+                            <tr>
+                                <td><b>AGUA 1LT</b></td>
+                                <td><input type="number" id="cajas-1lt" value="0" min="0" oninput="calcularAgua()" style="text-align:center;"></td>
+                                <td><input type="number" id="piezas-1lt" value="0" readonly style="text-align:center; font-weight:bold;"></td>
+                                <td><input type="number" id="costo-1lt" value="72.48" step="0.01" oninput="calcularAgua()" style="text-align:right;"></td>
+                                <td><input type="text" id="total-1lt" value="$0.00" readonly style="text-align:right; font-weight:bold; color:var(--primary);"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="subtotales">
+                                <td colspan="4" style="text-align:right;">TOTAL TICKET:</td>
+                                <td style="text-align:right; color:var(--secondary); font-size:15px;" id="gran-total-agua">$0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div style="margin-bottom: 25px; padding: 15px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 8px;">
+                        <label style="color:var(--primary);"><i data-lucide="paperclip" style="width:14px;"></i> Adjuntar PDF de Remisión:</label>
+                        <input type="file" id="agua-pdf" accept="application/pdf" style="background:#fff; margin-top:5px;">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button id="btn-guardar-agua" class="menu-btn btn-success" onclick="sincronizarAgua()">
+                            <i data-lucide="cloud-upload"></i> GUARDAR Y SUBIR PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div id="detalle-agua-historico" class="card" style="display: none; margin-top: 20px; max-width: 950px;">
+                </div>
+            </div>
+
+            <div id="degustacion-area">
+                
+                <div class="card" style="background-color: #fff; border-color: #d1d5db; margin-bottom: 20px;">
+                    <div class="info-header-title">Promocionales, Degustaciones, Material de Sucursal a dar de baja</div>
+
+                    <table class="info-table">
+                        <tr><th>Indicaciones:</th></tr>
+                        <tr><td>Captura las piezas que deben darse de baja en el SPOS.</td></tr>
+                        <tr><td>Puedes buscar en el punto de venta productos con las palabras:<b>CLIENTE, DEGUSTACION, PROMOCIONAL</b></td></tr>
+                        <tr><td>Puedes buscar en el mòdulo de pedido las <b>BATAS, STOPPER, CINTILLOS, GEL ANTIBACTERIAL</b></td></tr>
+                    </table>
+
+                    <table class="info-table">
+                        <tr>
+                            <th>Productos que deben darse de baja a "cero" (TODAS LAS PIEZAS EN SISTEMA, según comunicados.</th>
+                            <th style="width: 150px;">Comunicado</th>
+                        </tr>
+                        <tr>
+                            <td>50242-PONCHE DE FRUTAS CITRICO</td>
+                            <td>AVS CF 0125-26</td>
+                        </tr>
+                        <tr>
+                            <td>5038-PROTECTOR SOLAR AROMA VAINILLA</td>
+                            <td>AVD FR 256-25</td>
+                        </tr>
+                    </table>
+
+                    <table class="info-table">
+                        <tr>
+                            <th>Productos que deben darse de baja y cuadrar piezas FISICAS y en SPOS.</th>
+                            <th style="width: 150px;">Comunicado</th>
+                        </tr>
+                        <tr>
+                            <td>25487-FRAGANCIA CABALLERO ETERNAL SECRET</td>
+                            <td>AVS FR 3256</td>
+                        </tr>
+                        <tr>
+                            <td>56899-CREMA DE MANOS KAIRE CHOCOLATE</td>
+                            <td>AVS ER 6985</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="card" id="card-registro-degustacion">
+                    <h4 style="margin:0 0 15px 0; color: #000; font-weight: bold; font-size: 14px;">
+                        CAPTURA DE PRODUCTOS
+                    </h4>
+                    <div style="margin-bottom: 15px;">
+                        <label>Buscador (Productos para dar de baja):</label>
+                        <input type="text" id="busqueda-prod-deg" placeholder="Buscar por código o nombre..." onkeyup="filtrarProductosDegustacion(this.value)" style="background: #fffbeb; border-color: #f59e0b;">
+                    </div>
+                    <div class="grid-form" style="grid-template-columns: 3fr 1fr auto;">
+                        <div>
+                            <label>Producto Seleccionado:</label>
+                            <select id="select-producto-deg"></select>
+                        </div>
+                        <div>
+                            <label>Cantidad (Piezas):</label>
+                            <input type="number" id="input-cantidad-deg" value="1" min="1">
+                        </div>
+                        <button class="menu-btn btn-dark" onclick="agregarATablaDegustacion()">AGREGAR</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <table id="tabla-degustacion">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center;">CÓDIGO</th>
+                                <th>PRODUCTO</th>
+                                <th style="text-align:center;">CANTIDAD</th>
+                                <th style="text-align:center;">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-degustacion"></tbody>
+                    </table>
+
+                    <div style="margin-top: 25px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                        <button id="btn-guardar-deg" class="menu-btn btn-success" onclick="sincronizarDegustacion()">
+                            <i data-lucide="save"></i> GUARDAR DEGUSTACIÓN
+                        </button>
+                    </div>
+                </div>
+
+                <div id="detalle-degustacion-historico" class="card" style="display: none; margin-top: 20px;">
+                </div>
+
+            </div>
+
+        </div>
+
+        <div id="sidebar-historial" class="sidebar">
+            <h4 style="margin:0 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;"><i data-lucide="history"></i> HISTORIAL</h4>
+            <div id="lista-lotes-sidebar"></div>
+        </div>
+        
+        <div id="sidebar-agua" class="sidebar">
+            <h4 style="margin:0 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="history"></i> HISTORIAL AGUA
+            </h4>
+            <div id="lista-aguas-sidebar"></div>
+        </div>
+
+        <div id="sidebar-degustacion" class="sidebar">
+            <h4 style="margin:0 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #f59e0b;">
+                <i data-lucide="history"></i> HISTORIAL DEGUSTACIONES
+            </h4>
+            <div id="lista-degustaciones-sidebar"></div>
+        </div>
+    </div>
+</div>
+
+<div id="pdf-modal">
+    <div class="pdf-modal-content">
+        <div class="pdf-modal-header">
+            <h3 style="margin:0; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="file-text"></i> Visualizador de Remisión
+            </h3>
+            <button class="btn-close-modal" onclick="cerrarModalPdf()">
+                <i data-lucide="x-circle"></i> CERRAR
+            </button>
+        </div>
+        <iframe id="pdf-iframe" src="about:blank"></iframe>
+    </div>
+</div>
+
+<script>
+    const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
+    const _part2 = "Y2J5R3ZxbktGYjRTZVVKMFlJVUFvdElaTE04VU83bFF4e";
+    const _part3 = "URfWHNRVERrY2RhVl93N2tIemEtMmNNYXU2UFJ6MGJWdFAvZXhlYw";
+    const API_URL = atob(_part1 + _part2 + _part3);
+
+    let datosUnidades = [], listaProductos = [], rolesGlobal = [], itemsTabla = [], unidadLogueada = null, loteActual = null, modoAdmin = false;
+    let registrosAguaGlobal = []; 
+    let itemsDegustacion = []; 
+
+    window.onload = async () => {
+        // En caso de que se haya cargado asíncrono
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        await cargarDatosIniciales();
+    };
+
+    async function cargarDatosIniciales() {
+        try {
+            const r = await fetch(API_URL + "?accion=GET_INIT_DATA");
+            const d = await r.json();
+            datosUnidades = d.unidades;
+            listaProductos = d.productos;
+            rolesGlobal = d.roles;
+
+            const sel = document.getElementById('login-unidad');
+            sel.innerHTML = ''; // Limpiar por si es una recarga via Sync
+            datosUnidades.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.claveSimi;
+                opt.text = `${u.claveSimi} - ${u.claveFR} - ${u.nombre}`;
+                sel.appendChild(opt);
+            });
+            actualizarComboProductos(listaProductos);
+            actualizarComboProductosDegustacion(listaProductos.filter(p => p.promo && p.promo.toString().toUpperCase() === 'S'));
+        } catch (e) { alert("Error al cargar base de datos."); }
+    }
+
+    async function sincronizarBaseDatos() {
+        const btn = document.getElementById('btn-sync-db');
+        const txtOriginal = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader" class="spin"></i> ACTUALIZANDO...';
+        btn.disabled = true;
+        
+        try {
+            await cargarDatosIniciales();
+            if(unidadLogueada) {
+                // Actualiza los combos de las vistas activas sin perder captura
+                filtrarProductos(document.getElementById('busqueda-prod').value);
+                filtrarProductosDegustacion(document.getElementById('busqueda-prod-deg').value);
+            }
+            alert("✅ Base de datos sincronizada con éxito.");
+        } catch(e) {
+            alert("❌ Ocurrió un error al sincronizar.");
+        } finally {
+            btn.innerHTML = txtOriginal;
+            btn.disabled = false;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    }
+
+    function filtrarProductos(t) {
+        const f = listaProductos.filter(p => p.codigo.toString().includes(t) || p.descripcion.toLowerCase().includes(t.toLowerCase()));
+        actualizarComboProductos(f);
+    }
+
+    function actualizarComboProductos(prods) {
+        const s = document.getElementById('select-producto');
+        s.innerHTML = prods.slice(0, 50).map(p => `<option value="${p.codigo}">${p.codigo} - ${p.descripcion}</option>`).join('');
+    }
+
+    async function validarAcceso() {
+        const u = datosUnidades.find(u => u.claveSimi == document.getElementById('login-unidad').value && u.password == document.getElementById('login-pass').value);
+        if (u) {
+            unidadLogueada = u;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-unidad-nombre').innerHTML = `<i data-lucide="package"></i> ${u.claveFR} | ${u.claveSimi} | ${u.nombre.toUpperCase()}`;
+            await cargarHistorialLotes();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        } else { alert("Contraseña incorrecta."); }
+    }
+
+    function abrirPestañaCaptura() {
+        if (itemsTabla.length > 0 && !loteActual) {
+            if (!confirm("Tienes una captura en curso. ¿Deseas borrarla para empezar una nueva?")) return;
+        }
+        ocultarTodasLasPestañas();
+        document.getElementById('capture-area').style.display = 'block';
+        document.getElementById('sidebar-historial').style.display = 'block';
+        document.getElementById('app-container').classList.add('layout-with-sidebar');
+        
+        loteActual = null;
+        itemsTabla = [];
+        modoAdmin = false;
+        
+        document.getElementById('badge-folio').style.display = 'none';
+        document.getElementById('card-registro').classList.remove('locked');
+        document.getElementById('btn-guardar').style.display = 'inline-flex';
+        document.getElementById('btn-unlock').style.display = 'none';
+        document.getElementById('btn-update-estatus').style.display = 'none';
+        document.getElementById('btn-pdf').disabled = true;
+        document.getElementById('btn-pdf').classList.add('btn-disabled');
+        
+        renderTabla();
+        document.getElementById('busqueda-prod').focus();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function abrirPestañaAgua() {
+        ocultarTodasLasPestañas();
+        document.getElementById('agua-area').style.display = 'block';
+        document.getElementById('sidebar-agua').style.display = 'block';
+        document.getElementById('app-container').classList.add('layout-with-sidebar');
+        
+        document.getElementById('agua-fecha-ticket').valueAsDate = new Date();
+        cargarHistorialAgua(); 
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function abrirPestañaDegustacion() {
+        if (itemsDegustacion.length > 0) {
+            if (!confirm("Tienes una degustación sin guardar. ¿Deseas borrarla y empezar de nuevo?")) return;
+        }
+        ocultarTodasLasPestañas();
+        document.getElementById('degustacion-area').style.display = 'block';
+        document.getElementById('sidebar-degustacion').style.display = 'block';
+        document.getElementById('app-container').classList.add('layout-with-sidebar');
+        
+        itemsDegustacion = [];
+        renderTablaDegustacion();
+        filtrarProductosDegustacion(""); 
+        cargarHistorialDegustacion();
+        document.getElementById('busqueda-prod-deg').focus();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function ocultarTodasLasPestañas() {
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('capture-area').style.display = 'none';
+        document.getElementById('agua-area').style.display = 'none';
+        document.getElementById('degustacion-area').style.display = 'none';
+        
+        document.getElementById('sidebar-historial').style.display = 'none'; 
+        document.getElementById('sidebar-agua').style.display = 'none';
+        document.getElementById('sidebar-degustacion').style.display = 'none';
+        
+        document.getElementById('detalle-agua-historico').style.display = 'none';
+        document.getElementById('detalle-degustacion-historico').style.display = 'none';
+    }
+
+    function filtrarProductosDegustacion(t) {
+        const f = listaProductos.filter(p => {
+            const tienePromoS = (p.promo && p.promo.toString().toUpperCase() === 'S');
+            const coincideTexto = p.codigo.toString().includes(t) || p.descripcion.toLowerCase().includes(t.toLowerCase());
+            return tienePromoS && coincideTexto;
+        });
+        actualizarComboProductosDegustacion(f);
+    }
+
+    function actualizarComboProductosDegustacion(prods) {
+        const select = document.getElementById('select-producto-deg');
+        if(prods.length === 0) {
+            select.innerHTML = '<option value="">No hay productos en Promo "S"</option>';
+            return;
+        }
+        select.innerHTML = prods.slice(0, 100).map(p => `<option value="${p.codigo}">${p.codigo} | ${p.descripcion}</option>`).join('');
+    }
+
+    function agregarATablaDegustacion() {
+        const cod = document.getElementById('select-producto-deg').value;
+        if(!cod) return;
+        
+        const prod = listaProductos.find(p => p.codigo == cod);
+        const cant = parseInt(document.getElementById('input-cantidad-deg').value);
+
+        if (cant <= 0 || isNaN(cant)) { 
+            alert("La cantidad debe ser mayor a 0."); 
+            return; 
+        }
+
+        let existente = itemsDegustacion.find(i => i.codigo == cod);
+        if(existente) {
+            existente.cantidad += cant;
+        } else {
+            itemsDegustacion.push({
+                codigo: prod.codigo, 
+                descripcion: prod.descripcion, 
+                cantidad: cant
+            });
+        }
+        renderTablaDegustacion();
+        document.getElementById('input-cantidad-deg').value = 1;
+    }
+
+    function renderTablaDegustacion() {
+        const body = document.getElementById('body-degustacion');
+        body.innerHTML = "";
+        
+        itemsDegustacion.forEach((it, i) => {
+            body.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:bold;">${it.codigo}</td>
+                    <td>${it.descripcion}</td>
+                    <td style="text-align:center; font-weight:bold; color:var(--primary);">${it.cantidad}</td>
+                    <td style="text-align:center;">
+                        <button onclick="eliminarFilaDegustacion(${i})" style="color:red; border:none; background:none; cursor:pointer;" title="Eliminar">
+                            <i data-lucide="trash-2" style="width:16px;"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function eliminarFilaDegustacion(index) {
+        itemsDegustacion.splice(index, 1);
+        renderTablaDegustacion();
+    }
+
+    function generarFolioDegustacion() {
+        const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let folio = '';
+        for (let i = 0; i < 8; i++) {
+            folio += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        }
+        return folio;
+    }
+
+    async function sincronizarDegustacion() {
+        if (itemsDegustacion.length === 0) { alert("Agrega productos a la tabla antes de guardar."); return; }
+        if (!confirm("¿Deseas guardar permanentemente este lote de degustación?")) return;
+
+        const btn = document.getElementById('btn-guardar-deg');
+        const originalText = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Guardando...';
+            btn.disabled = true;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            const folioNuevo = generarFolioDegustacion();
+            
+            // AGREGAR ESTATUS "SOLICITADO" A TODOS LOS ITEMS AL MOMENTO DE GUARDAR
+            const itemsConEstatus = itemsDegustacion.map(it => ({
+                ...it,
+                estatus: "SOLICITADO"
+            }));
+
+            const payload = {
+                accion: "GUARDAR_DEGUSTACION",
+                folio: folioNuevo,
+                unidad: { claveSimi: unidadLogueada.claveSimi, nombre: unidadLogueada.nombre },
+                items: itemsConEstatus
+            };
+
+            const resp = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await resp.json();
+
+            if (res.status === "success" || !res.status) {
+                alert("✅ Degustación Guardada Exitosamente.\nFolio: " + folioNuevo);
+                itemsDegustacion = [];
+                renderTablaDegustacion();
+                cargarHistorialDegustacion(); 
+            } else { 
+                throw new Error(res.mensaje || "Ocurrió un error al guardar."); 
+            }
+        } catch (e) { 
+            alert("❌ Alerta de Sistema:\n\nTu interfaz ya está preparada, pero para que esto funcione asegúrate de haber creado el módulo 'GUARDAR_DEGUSTACION' en tu archivo de Google Apps Script.\n\nError: " + e.message); 
+        } 
+        finally { 
+            btn.innerHTML = originalText; 
+            btn.disabled = false; 
+            if (typeof lucide !== 'undefined') lucide.createIcons(); 
+        }
+    }
+
+    async function cargarHistorialDegustacion() {
+        const sidebar = document.getElementById('lista-degustaciones-sidebar');
+        sidebar.innerHTML = '<div style="text-align:center; padding: 20px;"><i data-lucide="loader" class="spin"></i></div>';
+        try {
+            const r = await fetch(API_URL + `?accion=GET_MIS_DEGUSTACIONES&claveSimi=${unidadLogueada.claveSimi}`);
+            const d = await r.json();
+            
+            if(d.registros && d.registros.length > 0) {
+                sidebar.innerHTML = d.registros.map(reg => `
+				<div class="lote-item" onclick="verDetalleDegustacion('${reg.folio}')" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 8px;">
+					<div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+						<b style="font-size: 13px; white-space: nowrap;">${reg.folio}</b>
+						<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+							<i data-lucide="calendar" style="width:11px; height:11px;"></i> 
+							${new Date(reg.fecha).toLocaleString()}
+						</span>
+					</div>
+					<span style="font-size: 8px; background: #f59e0b; color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; white-space: nowrap; flex-shrink: 0;">
+						${reg.estatus ? reg.estatus.toUpperCase() : 'SOLICITADO'}
+					</span>
+				</div>
+				`).join('');
+            } else {
+                sidebar.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">No hay registros aún.</p>';
+            }
+        } catch(e) {
+            sidebar.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Pendiente conectar historial con backend.</p>';
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // NUEVA FUNCIÓN PARA VER EL DETALLE DE DEGUSTACIONES
+    async function verDetalleDegustacion(folio) {
+        const detalleDiv = document.getElementById('detalle-degustacion-historico');
+        detalleDiv.style.display = 'block';
+        detalleDiv.innerHTML = '<div style="text-align:center; padding: 20px;"><i data-lucide="loader" class="spin"></i> Cargando detalles...</div>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        try {
+            // Nota: Debes asegurar que GET_DETALLE_DEGUSTACION esté en tu App Script devolviendo un JSON similar a GET_DETALLE_AGUA
+            const r = await fetch(API_URL + `?accion=GET_DETALLE_DEGUSTACION&folio=${folio}`);
+            const d = await r.json();
+
+            if (d.status === 'success' || d.items) {
+                let itemsHtml = (d.items || []).map(it => `
+                    <tr>
+                        <td style="text-align:center; font-weight:bold;">${it.codigo || it.CODIGO}</td>
+                        <td>${it.descripcion || it.PRODUCTO || it.producto}</td>
+                        <td style="text-align:center; font-weight:bold;">${it.cantidad || it.CANTIDAD}</td>
+                        <td style="text-align:center;">
+                            <span style="font-size: 10px; background: #fef08a; color: #854d0e; padding: 3px 6px; border-radius: 4px; font-weight: bold;">
+                                ${it.estatus || it.ESTATUS || 'SOLICITADO'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                detalleDiv.innerHTML = `
+                    <h4 style="margin:0 0 15px 0; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="file-text"></i> DETALLES DE DEGUSTACIÓN: ${folio}
+                    </h4>
+                    <table style="margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center;">CÓDIGO</th>
+                                <th>PRODUCTO</th>
+                                <th style="text-align:center;">CANTIDAD</th>
+                                <th style="text-align:center;">ESTATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                `;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } else {
+                throw new Error("No items");
+            }
+        } catch (e) {
+            detalleDiv.innerHTML = `
+                <div style="padding:15px; border:1px solid #f87171; background:#fef2f2; border-radius:8px; text-align:center; color:#dc2626;">
+                    <i data-lucide="alert-triangle" style="margin-bottom:10px;"></i><br>
+                    No se pudieron cargar los detalles del folio <b>${folio}</b>.<br>
+                    Asegúrate de tener programada la acción <code>GET_DETALLE_DEGUSTACION</code> en Google Apps Script.
+                </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    }
+
+    async function cargarHistorialAgua() {
+        try {
+            document.getElementById('lista-aguas-sidebar').innerHTML = '<div style="text-align:center; padding: 20px;"><i data-lucide="loader" class="spin"></i></div>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            const r = await fetch(API_URL + `?accion=GET_MIS_AGUAS&claveSimi=${unidadLogueada.claveSimi}`);
+            const d = await r.json();
+            
+            registrosAguaGlobal = d.registros || []; 
+            
+            if(registrosAguaGlobal.length === 0) {
+                document.getElementById('lista-aguas-sidebar').innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">No hay registros aún.</p>';
+                return;
+            }
+
+            document.getElementById('lista-aguas-sidebar').innerHTML = registrosAguaGlobal.map(a => {
+                let colorBg = a.estatus === 'EN REVISIÓN' ? '#eab308' : '#10b981'; 
+                let fechaFormateada = new Date(a.fechaTicket).toLocaleDateString('es-MX', {timeZone: 'UTC'});
+
+                return `
+                <div class="lote-item" style="cursor: pointer;" onclick="verDetalleAgua('${a.remision}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <b>${a.remision}</b>
+                        <span style="font-size: 9px; background: ${colorBg}; color: white; padding: 3px 6px; border-radius: 4px; font-weight: bold; letter-spacing: 0.5px;">
+                            ${a.estatus.toUpperCase()}
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+                        <span><i data-lucide="calendar" style="width:12px;"></i> ${fechaFormateada}</span>
+                        <span style="font-weight: bold; color: var(--primary);">$${a.total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `}).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        } catch (error) {
+            console.error("Error cargando historial de agua:", error);
+        }
+    }
+
+    async function verDetalleAgua(remision) {
+        const detalleDiv = document.getElementById('detalle-agua-historico');
+        detalleDiv.style.display = 'block';
+        detalleDiv.innerHTML = '<div style="text-align:center; padding: 20px;"><i data-lucide="loader" class="spin"></i> Cargando detalles...</div>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        try {
+            const r = await fetch(API_URL + `?accion=GET_DETALLE_AGUA&remision=${remision}`);
+            const d = await r.json();
+
+            if (d.status === 'success' || d.items) {
+                let itemsHtml = (d.items || []).map(it => `
+                    <tr>
+                        <td>${it.PRODUCTO || it.producto}</td>
+                        <td style="text-align:center;">${it.CAJAS || it.cajas || 0}</td>
+                        <td style="text-align:center;">${it.PIEZAS || it.piezas || 0}</td>
+                        <td style="text-align:right;">$${parseFloat(it.COSTO_CAJA || it.costoCaja || 0).toFixed(2)}</td>
+                        <td style="text-align:right; font-weight:bold;">$${parseFloat(it.COSTO_TOTAL || it.costoTotal || 0).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                let linkPdf = d.pdfUrl || d.urlPdf;
+                renderizarTarjetaDetalleAgua(remision, itemsHtml, linkPdf, detalleDiv);
+            } else {
+                throw new Error("No items");
+            }
+        } catch (e) {
+            const a = registrosAguaGlobal.find(x => x.remision === remision);
+            if(a) {
+                let itemsHtml = '';
+                if(a.items && a.items.length > 0) {
+                    itemsHtml = a.items.map(it => `
+                        <tr>
+                            <td>${it.PRODUCTO || it.producto}</td>
+                            <td style="text-align:center;">${it.CAJAS || it.cajas || 0}</td>
+                            <td style="text-align:center;">${it.PIEZAS || it.piezas || 0}</td>
+                            <td style="text-align:right;">$${parseFloat(it.COSTO_CAJA || it.costoCaja || 0).toFixed(2)}</td>
+                            <td style="text-align:right; font-weight:bold;">$${parseFloat(it.COSTO_TOTAL || it.costoTotal || 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    itemsHtml = `<tr><td colspan="5" style="text-align:center; padding:15px;">Resumen: Ticket de Agua por un total de <b>$${a.total.toFixed(2)}</b></td></tr>`;
+                }
+                
+                let linkPdf = a.pdfUrl || a.urlPdf || a.archivoPdf;
+                renderizarTarjetaDetalleAgua(remision, itemsHtml, linkPdf, detalleDiv);
+            } else {
+                detalleDiv.innerHTML = `<p style="color:var(--secondary); text-align:center;">No se pudieron cargar los detalles.</p>`;
+            }
+        }
+    }
+
+    function renderizarTarjetaDetalleAgua(remision, itemsHtml, linkPdf, container) {
+        container.innerHTML = `
+            <h4 style="margin:0 0 15px 0; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="file-text"></i> DETALLES DE REMISIÓN: ${remision}
+            </h4>
+            <table style="margin-bottom: 20px;">
+                <thead>
+                    <tr>
+                        <th>PRODUCTO</th>
+                        <th style="text-align:center;">CAJAS</th>
+                        <th style="text-align:center;">PIEZAS</th>
+                        <th style="text-align:right;">COSTO CAJA</th>
+                        <th style="text-align:right;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>${itemsHtml}</tbody>
+            </table>
+            <div style="display: flex; justify-content: flex-end; align-items: center;">
+                ${linkPdf 
+                    ? `<button onclick="abrirModalPdf('${linkPdf}')" class="menu-btn btn-info">
+                            <i data-lucide="external-link"></i> VER PDF ADJUNTO
+                       </button>` 
+                    : `<span style="color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-x" style="width:14px;"></i> Sin PDF disponible</span>`
+                }
+            </div>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function abrirModalPdf(url) {
+        let embedUrl = url;
+        if (url.includes('drive.google.com') && url.includes('/view')) {
+            embedUrl = url.replace('/view', '/preview');
+        }
+        document.getElementById('pdf-iframe').src = embedUrl;
+        document.getElementById('pdf-modal').style.display = 'flex';
+    }
+
+    function cerrarModalPdf() {
+        document.getElementById('pdf-modal').style.display = 'none';
+        document.getElementById('pdf-iframe').src = 'about:blank'; 
+    }
+
+    function calcularAgua() {
+        const c600 = parseFloat(document.getElementById('cajas-600').value) || 0;
+        const costo600 = parseFloat(document.getElementById('costo-600').value) || 0;
+        document.getElementById('piezas-600').value = c600 * 12;
+        document.getElementById('total-600').value = "$" + (c600 * costo600).toFixed(2);
+
+        const c1lt = parseFloat(document.getElementById('cajas-1lt').value) || 0;
+        const costo1lt = parseFloat(document.getElementById('costo-1lt').value) || 0;
+        document.getElementById('piezas-1lt').value = c1lt * 12;
+        document.getElementById('total-1lt').value = "$" + (c1lt * costo1lt).toFixed(2);
+
+        const granTotal = (c600 * costo600) + (c1lt * costo1lt);
+        document.getElementById('gran-total-agua').innerText = "$" + granTotal.toFixed(2);
+    }
+
+    async function sincronizarAgua() {
+        const fechaTicket = document.getElementById('agua-fecha-ticket').value;
+        const remision = document.getElementById('agua-remision').value.trim();
+        const archivoInput = document.getElementById('agua-pdf');
+        
+        const cajas600 = parseFloat(document.getElementById('cajas-600').value) || 0;
+        const cajas1lt = parseFloat(document.getElementById('cajas-1lt').value) || 0;
+
+        if (!fechaTicket) { alert("Debes ingresar la Fecha de Ticket."); return; }
+        if (!remision) { alert("Debes ingresar el número de Remisión."); return; }
+        if (cajas600 === 0 && cajas1lt === 0) { alert("Debes ingresar al menos 1 caja de agua."); return; }
+        if (archivoInput.files.length === 0) { alert("Debes adjuntar el PDF de la remisión."); return; }
+
+        const archivo = archivoInput.files[0];
+        const btn = document.getElementById('btn-guardar-agua');
+        const txtOriginal = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Procesando...';
+            btn.disabled = true;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            const base64Str = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(archivo);
+                reader.onload = () => resolve(reader.result.split(',')[1]); 
+                reader.onerror = error => reject(error); 
+            });
+
+            let datosAgua = [];
+            const fechaCaptura = new Date().toLocaleString("es-MX");
+
+            if(cajas600 > 0) {
+                datosAgua.push({
+                    FECHA_CAPTURA: fechaCaptura, CLAVE_FR: unidadLogueada.claveFR, CLAVESIMI: unidadLogueada.claveSimi, SUCURSAL: unidadLogueada.nombre,
+                    FECHA_TICKET: fechaTicket, REMISION: remision, PRODUCTO: "AGUA 600", CAJAS: cajas600,
+                    PIEZAS: document.getElementById('piezas-600').value, COSTO_CAJA: document.getElementById('costo-600').value,
+                    COSTO_TOTAL: (cajas600 * parseFloat(document.getElementById('costo-600').value)).toFixed(2)
+                });
+            }
+
+            if(cajas1lt > 0) {
+                datosAgua.push({
+                    FECHA_CAPTURA: fechaCaptura, CLAVE_FR: unidadLogueada.claveFR, CLAVESIMI: unidadLogueada.claveSimi, SUCURSAL: unidadLogueada.nombre,
+                    FECHA_TICKET: fechaTicket, REMISION: remision, PRODUCTO: "AGUA 1LT", CAJAS: cajas1lt,
+                    PIEZAS: document.getElementById('piezas-1lt').value, COSTO_CAJA: document.getElementById('costo-1lt').value,
+                    COSTO_TOTAL: (cajas1lt * parseFloat(document.getElementById('costo-1lt').value)).toFixed(2)
+                });
+            }
+
+            const payload = {
+                accion: "GUARDAR_AGUA", remision: remision, archivoBase64: base64Str, mimeType: archivo.type, datosAgua: datosAgua
+            };
+
+            const resp = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await resp.json();
+
+            if (res.status === "success") {
+                alert("✅ Registros guardados y PDF subido a Drive correctamente.");
+                document.getElementById('agua-remision').value = '';
+                document.getElementById('cajas-600').value = '0';
+                document.getElementById('cajas-1lt').value = '0';
+                document.getElementById('agua-pdf').value = '';
+                calcularAgua(); 
+                cargarHistorialAgua(); 
+            } else { throw new Error(res.mensaje); }
+
+        } catch (e) { alert("❌ Error: " + e.message); } 
+        finally { btn.innerHTML = txtOriginal; btn.disabled = false; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+    }
+
+    async function cargarHistorialLotes() {
+        const r = await fetch(API_URL + `?accion=GET_MIS_LOTES&claveSimi=${unidadLogueada.claveSimi}`);
+        const d = await r.json();
+        document.getElementById('lista-lotes-sidebar').innerHTML = d.lotes.map(l => `
+            <div class="lote-item" onclick="verDetalleLote('${l.folio}')">
+                <b>${l.folio}</b><br>
+                <small>${new Date(l.fecha).toLocaleDateString()}</small>
+            </div>
+        `).join('');
+    }
+
+    async function verDetalleLote(folio) {
+        ocultarTodasLasPestañas();
+        document.getElementById('capture-area').style.display = 'block';
+        document.getElementById('sidebar-historial').style.display = 'block';
+        document.getElementById('app-container').classList.add('layout-with-sidebar');
+
+        const r = await fetch(API_URL + `?accion=GET_DETALLE_LOTE&folio=${folio}`);
+        const d = await r.json();
+        itemsTabla = d.items;
+        loteActual = folio;
+        modoAdmin = false;
+
+        document.getElementById('badge-folio').innerText = "VISUALIZANDO LOTE: " + folio;
+        document.getElementById('badge-folio').style.display = 'block';
+        document.getElementById('card-registro').classList.add('locked');
+        document.getElementById('btn-guardar').style.display = 'none';
+        document.getElementById('btn-unlock').style.display = 'inline-flex';
+        document.getElementById('btn-pdf').disabled = false;
+        document.getElementById('btn-pdf').classList.remove('btn-disabled');
+        document.getElementById('btn-pdf').classList.add('btn-dark');
+
+        renderTabla(true);
+    }
+
+    function agregarATabla() {
+        const cod = document.getElementById('select-producto').value;
+        const prod = listaProductos.find(p => p.codigo == cod);
+        const fecha = document.getElementById('input-fecha-cad').value;
+        const sal = parseInt(document.getElementById('input-salida').value);
+        
+        if (!fecha || sal <= 0) { alert("Verifica Fecha y Salida."); return; }
+
+        itemsTabla.push({
+            codigo: prod.codigo, descripcion: prod.descripcion, fechaCad: fecha,
+            existencia: parseInt(document.getElementById('input-existencia').value),
+            salida: sal, precio: parseFloat(prod.precio), total: sal * parseFloat(prod.precio),
+            estatus: "", fechaAccion: ""
+        });
+        renderTabla();
+    }
+
+    function renderTabla(historial = false) {
+        const body = document.getElementById('body-caducidades');
+        body.innerHTML = "";
+        document.getElementById('th-estatus').style.display = historial ? 'table-cell' : 'none';
+        
+        let ex = 0, sa = 0, tt = 0;
+        itemsTabla.forEach((it, i) => {
+            ex += it.existencia; sa += it.salida; tt += it.total;
+            let colEstatus = historial ? `<td>${it.estatus || 'Pendiente'} <br><small>${it.fechaAccion}</small></td>` : '';
+            
+            if (historial && modoAdmin) {
+                colEstatus = `
+                    <td>
+                        <select onchange="cambiarEstatusTemp(${i}, this.value)">
+                            <option value="" ${it.estatus==''?'selected':''}>Pendiente</option>
+                            <option value="Vendido" ${it.estatus=='Vendido'?'selected':''}>Vendido</option>
+                            <option value="Levantado" ${it.estatus=='Levantado'?'selected':''}>Levantado</option>
+                        </select>
+                        <input type="date" value="${it.fechaAccion}" onchange="cambiarFechaTemp(${i}, this.value)" style="margin-top:5px; font-size:10px;">
+                    </td>`;
+            }
+
+            body.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:bold;">${it.codigo}</td>
+                    <td>${it.descripcion}</td>
+                    <td style="text-align:center;">${it.fechaCad}</td>
+                    <td style="text-align:center;">${it.existencia}</td>
+                    <td style="text-align:center; font-weight:bold;">${it.salida}</td>
+                    <td style="text-align:right;">$${it.precio.toFixed(2)}</td>
+                    <td style="text-align:right; font-weight:bold;">$${it.total.toFixed(2)}</td>
+                    ${colEstatus}
+                    <td style="text-align:center;">
+                        ${!historial ? `<button onclick="eliminarFila(${i})" style="color:red; border:none; background:none; cursor:pointer;"><i data-lucide="trash-2" style="width:14px;"></i></button>` : ''}
+                    </td>
+                </tr>`;
+        });
+        
+        document.getElementById('foot-caducidades').innerHTML = `
+            <tr class="subtotales">
+                <td colspan="3" style="text-align:right;">SUBTOTALES</td>
+                <td style="text-align:center;">${ex}</td><td style="text-align:center;">${sa}</td>
+                <td></td><td style="text-align:right;">$${tt.toFixed(2)}</td>
+                ${historial ? '<td></td>' : ''}<td></td>
+            </tr>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function cambiarEstatusTemp(i, v) { itemsTabla[i].estatus = v; }
+    function cambiarFechaTemp(i, v) { itemsTabla[i].fechaAccion = v; }
+    function eliminarFila(i) { itemsTabla.splice(i,1); renderTabla(); }
+
+    function habilitarEdicionAdmin() {
+        const pass = prompt("Ingresa Contraseña de Autorización (NEGOCIOS/VENTAS):");
+        const rol = rolesGlobal.find(r => r.password === pass && (r.permisos.includes("NEGOCIOS") || r.permisos.includes("VENTAS")));
+        if (rol) {
+            modoAdmin = true;
+            document.getElementById('btn-update-estatus').style.display = 'inline-flex';
+            document.getElementById('btn-unlock').style.display = 'none';
+            renderTabla(true);
+        } else { alert("Acceso Denegado."); }
+    }
+
+    async function guardarCambiosEstatus() {
+        if(!confirm("¿Guardar cambios en el estatus?")) return;
+        const b = document.getElementById('btn-update-estatus');
+        b.disabled = true;
+        const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ accion: "UPDATE_LOTE_STATUS", folio: loteActual, items: itemsTabla }) });
+        const res = await r.json();
+        if(res.status === "success") { alert("Estatus actualizado."); verDetalleLote(loteActual); b.disabled = false; }
+    }
+
+    async function sincronizarLote() {
+        if (itemsTabla.length === 0) { alert("Agrega productos primero."); return; }
+        if (!confirm("¿Deseas finalizar y guardar este lote?")) return;
+
+        const btn = document.getElementById('btn-guardar');
+        const originalText = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Guardando...';
+            btn.disabled = true;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            const payload = {
+                accion: "GUARDAR_CADUCIDADES",
+                unidad: { claveSimi: unidadLogueada.claveSimi, nombre: unidadLogueada.nombre },
+                items: itemsTabla
+            };
+
+            const resp = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await resp.json();
+
+            if (res.status === "success") {
+                alert("✅ Lote Guardado: " + res.folio);
+                itemsTabla = [];
+                renderTabla();
+                await cargarHistorialLotes();
+            } else { throw new Error(res.mensaje); }
+        } catch (e) { alert("❌ Error: " + e.message); } 
+        finally { btn.innerHTML = originalText; btn.disabled = false; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+    }
+
+    function descargarPDF() {
+        const element = document.createElement('div');
+        element.style.padding = "20px";
+        element.innerHTML = `
+            <div style="border-bottom: 2px solid #0f172a; margin-bottom: 20px; font-family: sans-serif;">
+                <h2 style="color: #0f172a;">Reporte de Caducidades - Folio: ${loteActual}</h2>
+                <p><b>Unidad:</b> ${unidadLogueada.claveFR} | ${unidadLogueada.claveSimi} | ${unidadLogueada.nombre}</p>
+                <p><b>Fecha Generación:</b> ${new Date().toLocaleString()}</p>
+            </div>
+            ${document.getElementById('tabla-caducidades').outerHTML}
+        `;
+        element.querySelectorAll('th:last-child, td:last-child').forEach(e => e.remove());
+        html2pdf().set({ margin: 10, filename: `LOTE_${loteActual}.pdf`, jsPDF: { orientation: 'landscape' } }).from(element).save();
+    }
+</script>
+
+</body>
+</html>
