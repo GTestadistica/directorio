@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Sucursales v1.06</title>
+    <title>Gestión de Sucursales v1.07</title>
     
     <link rel="preconnect" href="https://unpkg.com">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -232,7 +232,7 @@
     <div class="top-menu">
         <div class="top-menu-left">
             <h3 id="display-unidad-nombre" style="margin:0; font-size: 17px; color: var(--primary); display: flex; align-items: center; gap: 10px;"></h3>
-            <span class="version-tag">1.06</span>
+            <span class="version-tag">1.07</span>
             
             <button class="menu-btn btn-success" id="btn-sync-db" onclick="sincronizarBaseDatos()" title="Actualizar datos de la nube">
                 <i data-lucide="refresh-cw"></i> SYNC DB
@@ -383,33 +383,25 @@
                     </table>
 
                     <table class="info-table">
-                        <tr>
-                            <th>Productos que deben darse de baja a "cero" (TODAS LAS PIEZAS EN SISTEMA, según comunicados.</th>
-                            <th style="width: 150px;">Comunicado</th>
-                        </tr>
-                        <tr>
-                            <td>3504-ELECTROLITO PVO 10SOB XGEAR CITRUS</td>
-                            <td>AV. FYS. 124-26</td>
-                        </tr>
-                        <tr>
-                            <td>1799-AGUA E-PURA 600ML</td>
-                            <td>AV. FYS. 124-26</td>
-                        </tr>
+                        <thead>
+                            <tr>
+                                <th>Productos que deben darse de baja a "cero" (TODAS LAS PIEZAS EN SISTEMA, según comunicados.</th>
+                                <th style="width: 150px;">Comunicado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-info-z">
+                            </tbody>
                     </table>
 
                     <table class="info-table">
-                        <tr>
-                            <th>Productos que deben darse de baja y cuadrar piezas FISICAS y en SPOS.</th>
-                            <th style="width: 150px;">Comunicado</th>
-                        </tr>
-                        <tr>
-                            <td>25487-FRAGANCIA CABALLERO ETERNAL SECRET</td>
-                            <td>AVS FR 3256</td>
-                        </tr>
-                        <tr>
-                            <td>56899-CREMA DE MANOS KAIRE CHOCOLATE</td>
-                            <td>AVS ER 6985</td>
-                        </tr>
+                        <thead>
+                            <tr>
+                                <th>Productos que deben darse de baja y cuadrar piezas FISICAS y en SPOS.</th>
+                                <th style="width: 150px;">Comunicado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-info-f">
+                            </tbody>
                     </table>
                 </div>
 
@@ -497,9 +489,10 @@
 </div>
 
 <script>
+    //
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J5R3ZxbktGYjRTZVVKMFlJVUFvdElaTE04VU83bFF4e";
-    const _part3 = "URfWHNRVERrY2RhVl93N2tIemEtMmNNYXU2UFJ6MGJWdFAvZXhlYw";
+    const _part2 = "Y2J3enNTQ1BRYXVnTmd1bHVWZUxubkFLWWVMWl85NXpfS0M1dWZH";
+    const _part3 = "TUdVNHVaZlUtSkZUTGFwbXBTd3J3ZmZnNDJLa1IvZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
 
     let datosUnidades = [], listaProductos = [], rolesGlobal = [], itemsTabla = [], unidadLogueada = null, loteActual = null, modoAdmin = false;
@@ -507,7 +500,6 @@
     let itemsDegustacion = []; 
 
     window.onload = async () => {
-        // En caso de que se haya cargado asíncrono
         if (typeof lucide !== 'undefined') lucide.createIcons();
         await cargarDatosIniciales();
     };
@@ -521,7 +513,7 @@
             rolesGlobal = d.roles;
 
             const sel = document.getElementById('login-unidad');
-            sel.innerHTML = ''; // Limpiar por si es una recarga via Sync
+            sel.innerHTML = ''; 
             datosUnidades.forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.claveSimi;
@@ -530,7 +522,30 @@
             });
             actualizarComboProductos(listaProductos);
             actualizarComboProductosDegustacion(listaProductos.filter(p => p.promo && p.promo.toString().toUpperCase() === 'S'));
+            
+            // ACTUALIZACIÓN DE TABLAS INFORMATIVAS (MEJORA SOLICITADA)
+            dibujarTablasInformativas();
+
         } catch (e) { alert("Error al cargar base de datos."); }
+    }
+
+    // FUNCIÓN PARA DIBUJAR TABLAS INFORMATIVAS DINÁMICAMENTE
+    function dibujarTablasInformativas() {
+        const bodyZ = document.getElementById('body-info-z');
+        const bodyF = document.getElementById('body-info-f');
+
+        // Filtrar productos por letra Z en columna Ajuste
+        const prodsZ = listaProductos.filter(p => p.ajuste && p.ajuste.toString().toUpperCase() === 'Z');
+        // Filtrar productos por letra F en columna Ajuste
+        const prodsF = listaProductos.filter(p => p.ajuste && p.ajuste.toString().toUpperCase() === 'F');
+
+        bodyZ.innerHTML = prodsZ.length > 0 
+            ? prodsZ.map(p => `<tr><td>${p.codigo}-${p.descripcion}</td><td>${p.comunicado || 'PENDIENTE'}</td></tr>`).join('')
+            : '<tr><td colspan="2" style="text-align:center; color:gray;">No hay productos programados para baja a cero.</td></tr>';
+
+        bodyF.innerHTML = prodsF.length > 0 
+            ? prodsF.map(p => `<tr><td>${p.codigo}-${p.descripcion}</td><td>${p.comunicado || 'PENDIENTE'}</td></tr>`).join('')
+            : '<tr><td colspan="2" style="text-align:center; color:gray;">No hay productos para cuadrar físico vs sistema.</td></tr>';
     }
 
     async function sincronizarBaseDatos() {
@@ -542,7 +557,6 @@
         try {
             await cargarDatosIniciales();
             if(unidadLogueada) {
-                // Actualiza los combos de las vistas activas sin perder captura
                 filtrarProductos(document.getElementById('busqueda-prod').value);
                 filtrarProductosDegustacion(document.getElementById('busqueda-prod-deg').value);
             }
@@ -738,7 +752,6 @@
 
             const folioNuevo = generarFolioDegustacion();
             
-            // AGREGAR ESTATUS "SOLICITADO" A TODOS LOS ITEMS AL MOMENTO DE GUARDAR
             const itemsConEstatus = itemsDegustacion.map(it => ({
                 ...it,
                 estatus: "SOLICITADO"
@@ -763,7 +776,7 @@
                 throw new Error(res.mensaje || "Ocurrió un error al guardar."); 
             }
         } catch (e) { 
-            alert("❌ Alerta de Sistema:\n\nTu interfaz ya está preparada, pero para que esto funcione asegúrate de haber creado el módulo 'GUARDAR_DEGUSTACION' en tu archivo de Google Apps Script.\n\nError: " + e.message); 
+            alert("❌ Error: " + e.message); 
         } 
         finally { 
             btn.innerHTML = originalText; 
@@ -781,29 +794,28 @@
             
             if(d.registros && d.registros.length > 0) {
                 sidebar.innerHTML = d.registros.map(reg => `
-				<div class="lote-item" onclick="verDetalleDegustacion('${reg.folio}')" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 8px;">
-					<div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-						<b style="font-size: 13px; white-space: nowrap;">${reg.folio}</b>
-						<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 4px;">
-							<i data-lucide="calendar" style="width:11px; height:11px;"></i> 
-							${new Date(reg.fecha).toLocaleString()}
-						</span>
-					</div>
-					<span style="font-size: 8px; background: #f59e0b; color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; white-space: nowrap; flex-shrink: 0;">
-						${reg.estatus ? reg.estatus.toUpperCase() : 'SOLICITADO'}
-					</span>
-				</div>
-				`).join('');
+                <div class="lote-item" onclick="verDetalleDegustacion('${reg.folio}')" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                        <b style="font-size: 13px; white-space: nowrap;">${reg.folio}</b>
+                        <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                            <i data-lucide="calendar" style="width:11px; height:11px;"></i> 
+                            ${new Date(reg.fecha).toLocaleString()}
+                        </span>
+                    </div>
+                    <span style="font-size: 8px; background: #f59e0b; color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; white-space: nowrap; flex-shrink: 0;">
+                        ${reg.estatus ? reg.estatus.toUpperCase() : 'SOLICITADO'}
+                    </span>
+                </div>
+                `).join('');
             } else {
                 sidebar.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">No hay registros aún.</p>';
             }
         } catch(e) {
-            sidebar.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Pendiente conectar historial con backend.</p>';
+            sidebar.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Error al conectar historial.</p>';
         }
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    // NUEVA FUNCIÓN PARA VER EL DETALLE DE DEGUSTACIONES
     async function verDetalleDegustacion(folio) {
         const detalleDiv = document.getElementById('detalle-degustacion-historico');
         detalleDiv.style.display = 'block';
@@ -811,7 +823,6 @@
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
         try {
-            // Nota: Debes asegurar que GET_DETALLE_DEGUSTACION esté en tu App Script devolviendo un JSON similar a GET_DETALLE_AGUA
             const r = await fetch(API_URL + `?accion=GET_DETALLE_DEGUSTACION&folio=${folio}`);
             const d = await r.json();
 
@@ -853,8 +864,7 @@
             detalleDiv.innerHTML = `
                 <div style="padding:15px; border:1px solid #f87171; background:#fef2f2; border-radius:8px; text-align:center; color:#dc2626;">
                     <i data-lucide="alert-triangle" style="margin-bottom:10px;"></i><br>
-                    No se pudieron cargar los detalles del folio <b>${folio}</b>.<br>
-                    Asegúrate de tener programada la acción <code>GET_DETALLE_DEGUSTACION</code> en Google Apps Script.
+                    No se pudieron cargar los detalles del folio <b>${folio}</b>.
                 </div>
             `;
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -929,9 +939,7 @@
         } catch (e) {
             const a = registrosAguaGlobal.find(x => x.remision === remision);
             if(a) {
-                let itemsHtml = '';
-                if(a.items && a.items.length > 0) {
-                    itemsHtml = a.items.map(it => `
+                let itemsHtml = a.items ? a.items.map(it => `
                         <tr>
                             <td>${it.PRODUCTO || it.producto}</td>
                             <td style="text-align:center;">${it.CAJAS || it.cajas || 0}</td>
@@ -939,15 +947,10 @@
                             <td style="text-align:right;">$${parseFloat(it.COSTO_CAJA || it.costoCaja || 0).toFixed(2)}</td>
                             <td style="text-align:right; font-weight:bold;">$${parseFloat(it.COSTO_TOTAL || it.costoTotal || 0).toFixed(2)}</td>
                         </tr>
-                    `).join('');
-                } else {
-                    itemsHtml = `<tr><td colspan="5" style="text-align:center; padding:15px;">Resumen: Ticket de Agua por un total de <b>$${a.total.toFixed(2)}</b></td></tr>`;
-                }
+                    `).join('') : `<tr><td colspan="5" style="text-align:center; padding:15px;">Total: $${a.total.toFixed(2)}</td></tr>`;
                 
-                let linkPdf = a.pdfUrl || a.urlPdf || a.archivoPdf;
+                let linkPdf = a.pdfUrl || a.urlPdf;
                 renderizarTarjetaDetalleAgua(remision, itemsHtml, linkPdf, detalleDiv);
-            } else {
-                detalleDiv.innerHTML = `<p style="color:var(--secondary); text-align:center;">No se pudieron cargar los detalles.</p>`;
             }
         }
     }
@@ -974,7 +977,7 @@
                     ? `<button onclick="abrirModalPdf('${linkPdf}')" class="menu-btn btn-info">
                             <i data-lucide="external-link"></i> VER PDF ADJUNTO
                        </button>` 
-                    : `<span style="color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-x" style="width:14px;"></i> Sin PDF disponible</span>`
+                    : `<span style="color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-x" style="width:14px;"></i> Sin PDF</span>`
                 }
             </div>
         `;
@@ -1018,10 +1021,9 @@
         const cajas600 = parseFloat(document.getElementById('cajas-600').value) || 0;
         const cajas1lt = parseFloat(document.getElementById('cajas-1lt').value) || 0;
 
-        if (!fechaTicket) { alert("Debes ingresar la Fecha de Ticket."); return; }
-        if (!remision) { alert("Debes ingresar el número de Remisión."); return; }
-        if (cajas600 === 0 && cajas1lt === 0) { alert("Debes ingresar al menos 1 caja de agua."); return; }
-        if (archivoInput.files.length === 0) { alert("Debes adjuntar el PDF de la remisión."); return; }
+        if (!fechaTicket || !remision || (cajas600 === 0 && cajas1lt === 0) || archivoInput.files.length === 0) {
+            alert("Completa todos los campos y adjunta el PDF."); return;
+        }
 
         const archivo = archivoInput.files[0];
         const btn = document.getElementById('btn-guardar-agua');
@@ -1068,10 +1070,8 @@
             const res = await resp.json();
 
             if (res.status === "success") {
-                alert("✅ Registros guardados y PDF subido a Drive correctamente.");
+                alert("✅ Guardado correctamente.");
                 document.getElementById('agua-remision').value = '';
-                document.getElementById('cajas-600').value = '0';
-                document.getElementById('cajas-1lt').value = '0';
                 document.getElementById('agua-pdf').value = '';
                 calcularAgua(); 
                 cargarHistorialAgua(); 
@@ -1151,7 +1151,6 @@
                             <option value="Vendido" ${it.estatus=='Vendido'?'selected':''}>Vendido</option>
                             <option value="Levantado" ${it.estatus=='Levantado'?'selected':''}>Levantado</option>
                         </select>
-                        <input type="date" value="${it.fechaAccion}" onchange="cambiarFechaTemp(${i}, this.value)" style="margin-top:5px; font-size:10px;">
                     </td>`;
             }
 
@@ -1182,12 +1181,11 @@
     }
 
     function cambiarEstatusTemp(i, v) { itemsTabla[i].estatus = v; }
-    function cambiarFechaTemp(i, v) { itemsTabla[i].fechaAccion = v; }
     function eliminarFila(i) { itemsTabla.splice(i,1); renderTabla(); }
 
     function habilitarEdicionAdmin() {
-        const pass = prompt("Ingresa Contraseña de Autorización (NEGOCIOS/VENTAS):");
-        const rol = rolesGlobal.find(r => r.password === pass && (r.permisos.includes("NEGOCIOS") || r.permisos.includes("VENTAS")));
+        const pass = prompt("Contraseña Administrativa:");
+        const rol = rolesGlobal.find(r => r.password === pass);
         if (rol) {
             modoAdmin = true;
             document.getElementById('btn-update-estatus').style.display = 'inline-flex';
@@ -1197,57 +1195,42 @@
     }
 
     async function guardarCambiosEstatus() {
-        if(!confirm("¿Guardar cambios en el estatus?")) return;
         const b = document.getElementById('btn-update-estatus');
         b.disabled = true;
         const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ accion: "UPDATE_LOTE_STATUS", folio: loteActual, items: itemsTabla }) });
         const res = await r.json();
-        if(res.status === "success") { alert("Estatus actualizado."); verDetalleLote(loteActual); b.disabled = false; }
+        if(res.status === "success") { alert("Estatus actualizado."); b.disabled = false; }
     }
 
     async function sincronizarLote() {
         if (itemsTabla.length === 0) { alert("Agrega productos primero."); return; }
-        if (!confirm("¿Deseas finalizar y guardar este lote?")) return;
-
         const btn = document.getElementById('btn-guardar');
-        const originalText = btn.innerHTML;
-
+        btn.disabled = true;
         try {
-            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Guardando...';
-            btn.disabled = true;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-
             const payload = {
                 accion: "GUARDAR_CADUCIDADES",
                 unidad: { claveSimi: unidadLogueada.claveSimi, nombre: unidadLogueada.nombre },
                 items: itemsTabla
             };
-
             const resp = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const res = await resp.json();
-
             if (res.status === "success") {
-                alert("✅ Lote Guardado: " + res.folio);
+                alert("✅ Lote Guardado.");
                 itemsTabla = [];
                 renderTabla();
                 await cargarHistorialLotes();
-            } else { throw new Error(res.mensaje); }
-        } catch (e) { alert("❌ Error: " + e.message); } 
-        finally { btn.innerHTML = originalText; btn.disabled = false; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+            }
+        } catch (e) { alert("❌ Error al guardar."); } 
+        finally { btn.disabled = false; }
     }
 
     function descargarPDF() {
         const element = document.createElement('div');
         element.style.padding = "20px";
         element.innerHTML = `
-            <div style="border-bottom: 2px solid #0f172a; margin-bottom: 20px; font-family: sans-serif;">
-                <h2 style="color: #0f172a;">Reporte de Caducidades - Folio: ${loteActual}</h2>
-                <p><b>Unidad:</b> ${unidadLogueada.claveFR} | ${unidadLogueada.claveSimi} | ${unidadLogueada.nombre}</p>
-                <p><b>Fecha Generación:</b> ${new Date().toLocaleString()}</p>
-            </div>
+            <h2 style="color: #0f172a;">Reporte de Caducidades - Folio: ${loteActual}</h2>
             ${document.getElementById('tabla-caducidades').outerHTML}
         `;
-        element.querySelectorAll('th:last-child, td:last-child').forEach(e => e.remove());
         html2pdf().set({ margin: 10, filename: `LOTE_${loteActual}.pdf`, jsPDF: { orientation: 'landscape' } }).from(element).save();
     }
 </script>
