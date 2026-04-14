@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.62.2</title>
+    <title>Visor Pro v10.63.0</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --primary: #0f172a; 
@@ -161,7 +162,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.62.2</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.63.0</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
@@ -236,7 +237,8 @@
             <button class="menu-btn btn-dark" onclick="guardarPedidos()"><i data-lucide="save"></i> Guardar Pedidos</button>
         </div>
     </div>
-    <div class="card">
+    
+    <div class="card" id="area-captura-pedidos">
         <style>
             #tabla-pedidos-captura { table-layout: fixed; width: 100%; border-collapse: collapse; }
             #tabla-pedidos-captura th, #tabla-pedidos-captura td { padding: 4px !important; font-size: 11px !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
@@ -250,10 +252,17 @@
             </div>
             
             <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: var(--text-dark);">
-                <input type="checkbox" id="chk-con-folio" onchange="filtrarPedidosVisual()" style="accent-color: var(--primary); transform: scale(1.2);"> Solo con Pedido
+                <input type="checkbox" id="chk-con-folio" onchange="filtrarPedidosVisual()" style="accent-color: var(--primary); transform: scale(1.2);"> Filtro con Pedido
             </label>
 
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <i data-lucide="calendar-search" style="color: var(--text-muted); width: 16px; height: 16px;"></i>
+                <input type="date" id="filtro-fecha-captura" class="edit-combo" style="width: auto; height: 32px; padding: 4px 10px; font-size: 12px;" onchange="filtrarPedidosVisual()" title="Filtrar por fecha de captura (Hora Sistema)">
+            </div>
+
             <button class="menu-btn" onclick="descargarExcelPedidos()" style="background: #16a34a; color: white; border-color: #15803d; height: 32px;"><i data-lucide="file-spreadsheet"></i> Descargar Excel</button>
+            
+            <button class="menu-btn" onclick="tomarCapturaPedidos()" style="background: #dbcef8; color: white; border-color: #7c3aed; height: 32px;"><i data-lucide="camera"></i> Capturar</button>
 
             <div style="display: flex; gap: 20px; text-align: right; margin-left: auto;">
                 <div style="min-width: 120px; font-size: 12px;"><strong>Σ Vta Semanal:</strong> <br><span id="tot-vta-semanal" style="color: #bd921c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
@@ -515,7 +524,7 @@
     <div class="modal-content" style="max-width: 850px;">
         <span class="close-btn" onclick="cerrarModal('modal-nueva-sucursal')"><i data-lucide="x"></i></span>
         <h2 style="margin-top:0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="store"></i> Registrar Nueva Sucursal (v10.61.0)
+            <i data-lucide="store"></i> Registrar Nueva Sucursal (v10.63.0)
         </h2>
         
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;">
@@ -548,11 +557,11 @@
 
 <script>
     lucide.createIcons();
-     //  
+     //     
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J4bWVib3lYV21BMU1ZbGhzVEtDRmpEd0FkMkhPcFlQN0hQWXR1";
-    const _part3 = "MFVvbzE2bzBvSUtxSWNTMFJHY1FFR1lzNFFKSV8vZXhlYw";
+    const _part2 = "Y2J6YWpteGR1M2IwTS0zeUFYRlM3dE11TkFVWktaMGMydjBzWF81MEt";
+    const _part3 = "1eU9MRG5fY1pKbkJtOURucnRCZGlXYVFBUF8vZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
@@ -1370,6 +1379,34 @@
         actualizarTotalesPedido();
     }
 
+    // --- NUEVO: FUNCIÓN PARA LIMPIAR Y REINICIAR LA TABLA DE PEDIDOS ---
+    function limpiarTablaPedidos() {
+        const filas = document.querySelectorAll('#body-pedidos tr');
+        filas.forEach(f => {
+            const inputs = f.querySelectorAll('.input-capture');
+            if(inputs.length >= 5) {
+                inputs[0].value = "NORMAL";
+                inputs[1].value = "";
+                inputs[2].value = "$ 0.00"; inputs[2].dataset.valor = "0";
+                inputs[3].value = "$ 0.00"; inputs[3].dataset.valor = "0";
+                inputs[4].value = "";
+            }
+            f.style.backgroundColor = '';
+            f.dataset.origTipo = "NORMAL";
+            f.dataset.origImporte = "0";
+            f.dataset.origFolio = "";
+            f.dataset.fechaCaptura = "";
+            f.style.display = ''; 
+        });
+        
+        // Resetear los filtros visuales del área de captura
+        document.getElementById('filtro-tabla-pedidos').value = "";
+        document.getElementById('chk-con-folio').checked = false;
+        document.getElementById('filtro-fecha-captura').value = "";
+        
+        actualizarTotalesPedido();
+    }
+
     function calcularDescuento(input) {
         const fila = input.closest('tr');
         const importe = parseFloat(input.value.replace(/[^0-9.-]+/g,"")) || 0;
@@ -1430,6 +1467,9 @@
     function filtrarPedidosVisual() {
         const texto = normalizarTexto(document.getElementById('filtro-tabla-pedidos').value);
         const soloConFolio = document.getElementById('chk-con-folio').checked; 
+        
+        // NUEVO: Leer el valor del mini calendario (Formato YYYY-MM-DD)
+        const fechaFiltro = document.getElementById('filtro-fecha-captura').value; 
         const filas = document.querySelectorAll('#body-pedidos tr');
         
         filas.forEach(f => {
@@ -1447,7 +1487,19 @@
                 cumpleFolio = tieneImporte || tieneFolio;
             }
 
-            f.style.display = (cumpleTexto && cumpleFolio) ? '' : 'none';
+            // NUEVO: Validación de Fecha
+            let cumpleFecha = true;
+            if (fechaFiltro) {
+                const fechaFila = f.dataset.fechaCaptura || "";
+                // Comparamos si la fecha de la fila incluye la fecha del filtro (ignorando la hora)
+                // Ahora ambos están en formato YYYY-MM-DD
+                if (!fechaFila.includes(fechaFiltro)) {
+                    cumpleFecha = false;
+                }
+            }
+
+            // Ocultamos o mostramos según si cumple todas las condiciones
+            f.style.display = (cumpleTexto && cumpleFolio && cumpleFecha) ? '' : 'none';
         });
         actualizarTotalesPedido();
     }
@@ -1567,35 +1619,47 @@
         }
     }
 
+    // --- SEGMENTO ACTUALIZADO: CONSULTA Y RELLENADO DE HISTÓRICO ---
+
     async function consultarPedidosSemana() {
         const semana = document.getElementById('input-semana-pedido').value;
         if(!semana) return;
 
-        document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Buscando histórico...';
+        // Mostrar estado de carga en el UI
+        const statusEl = document.getElementById('mensaje-estado');
+        statusEl.innerHTML = '<i data-lucide="loader" class="spin"></i> Buscando histórico...';
         lucide.createIcons();
 
         try {
+            // Se realiza la petición incluyendo la acción y la semana seleccionada
             const response = await fetch(API_URL + "?accion=GET_PEDIDOS_SEMANA&semana=" + semana);
             const data = await response.json();
             
             if(data.pedidos && data.pedidos.length > 0) {
+                // 1. Llenamos la tabla con los datos del servidor
                 rellenarTablaConHistorico(data.pedidos);
-                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Histórico cargado';
+                
+                // 2. NUEVO: Forzamos el filtro visual por si hay una fecha o texto ya escrito
+                filtrarPedidosVisual();
+
+                statusEl.innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Histórico cargado';
                 alert("✅ Se cargó el histórico de la " + semana);
             } else {
-                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="info"></i> Semana vacía';
+                statusEl.innerHTML = '<i data-lucide="info"></i> Semana vacía';
                 alert("ℹ️ No hay pedidos registrados en la " + semana + ". Puedes comenzar a capturar.");
                 limpiarTablaPedidos();
             }
             lucide.createIcons();
         } catch(e) {
+            console.error("Error en la consulta:", e);
             alert("❌ Error al consultar el histórico. Revisa que tu AppScript esté desplegado en una Nueva Implementación.");
-            document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="alert-circle" style="color:#ef4444;"></i> Error';
+            statusEl.innerHTML = '<i data-lucide="alert-circle" style="color:#ef4444;"></i> Error';
             lucide.createIcons();
         }
     }
 
     function rellenarTablaConHistorico(historico) {
+        // Limpiamos los inputs antes de inyectar los datos nuevos
         limpiarTablaPedidos(); 
         
         const filas = document.querySelectorAll('#body-pedidos tr');
@@ -1603,39 +1667,59 @@
             const claveSimi = f.dataset.clavesimi; 
             if(!claveSimi) return;
 
+            // Buscamos si existe un registro para esta sucursal en el array que devolvió el AppScript
             const pedido = historico.find(p => p.claveSimi == claveSimi); 
             
             if (pedido) {
                 const inputs = f.querySelectorAll('.input-capture');
                 
+                // 1. Asignación de Tipo de Pedido
                 const tipo = pedido.tipoPedido || "NORMAL";
                 inputs[0].value = tipo;
                 
+                // 2. Asignación de Importe con formato moneda
                 const importe = pedido.importe || 0;
                 if(importe > 0) {
                     inputs[1].value = "$ " + importe.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    calcularDescuento(inputs[1]);
+                    calcularDescuento(inputs[1]); // Disparamos el cálculo automático del -35%
                 } else {
                     inputs[1].value = "";
                 }
                 
+                // 3. Asignación de Folio
                 const folio = pedido.folio || "";
                 inputs[4].value = folio; 
 
+                // 4. Guardamos valores originales para control de cambios
                 f.dataset.origTipo = tipo;
                 f.dataset.origImporte = importe;
                 f.dataset.origFolio = folio;
+
+                // --- ACTUALIZACIÓN CRÍTICA PARA EL FILTRO ---
+                // Convertimos "DD/MM/YYYY HH:mm:ss" a "YYYY-MM-DD" para compatibilidad con el input date
+                let fechaParaFiltro = "";
+                if (pedido.horaSistema) {
+                    const soloFecha = pedido.horaSistema.split(' ')[0]; // Extrae "14/04/2026"
+                    const partes = soloFecha.split('/'); // ["14", "04", "2026"]
+                    if (partes.length === 3) {
+                        // Reorganiza a "2026-04-14"
+                        fechaParaFiltro = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                    }
+                }
+                f.dataset.fechaCaptura = fechaParaFiltro; 
+                // --------------------------------------------
+
             } else {
+                // Si no hay pedido, reseteamos el dataset de la fila
                 f.dataset.origTipo = "NORMAL";
                 f.dataset.origImporte = "0";
                 f.dataset.origFolio = "";
+                f.dataset.fechaCaptura = ""; 
             }
         });
+        
+        // Actualizamos los sumatorios de la parte superior del dashboard
         actualizarTotalesPedido();
-    }
-    
-    function limpiarTablaPedidos() {
-        renderizarTablaPedidos(sucursales);
     }
     
     // ----------------------------------------
@@ -2281,6 +2365,78 @@
             document.getElementById('modal-nueva-sucursal').style.display = 'flex';
             lucide.createIcons();
         }
+    }
+    
+    // --- NUEVA FUNCIÓN AGREGADA PARA TOMAR LA CAPTURA ---
+    // --- FUNCIÓN ACTUALIZADA PARA CAPTURAR TODO EL SCROLL ---
+    function tomarCapturaPedidos() {
+        const area = document.getElementById('area-captura-pedidos');
+        const tableContainer = area.querySelector('.table-container'); // NUEVO: Seleccionar el div del scroll
+        if(!area || !tableContainer) return;
+
+        // Asegurar que se cumpla la regla forzando el check y el filtro antes de capturar
+        const chk = document.getElementById('chk-con-folio');
+        if (!chk.checked) {
+            chk.checked = true;
+            filtrarPedidosVisual();
+        }
+
+        // Fijar valores de inputs para html2canvas
+        const inputs = area.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if(input.tagName === 'SELECT') {
+                const selected = input.options[input.selectedIndex];
+                if(selected) {
+                    Array.from(input.options).forEach(opt => opt.removeAttribute('selected'));
+                    selected.setAttribute('selected', 'selected');
+                }
+            } else {
+                input.setAttribute('value', input.value);
+            }
+        });
+
+        const oldText = document.getElementById('mensaje-estado').innerHTML;
+        document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Generando captura completa...';
+        lucide.createIcons();
+
+        // NUEVO: 1. Guardar estilos originales del contenedor para no estropearlo
+        const originalMaxHeight = tableContainer.style.maxHeight;
+        const originalOverflow = tableContainer.style.overflow;
+        
+        // NUEVO: 2. Expandir el contenedor a su máximo tamaño para que html2canvas vea todo
+        tableContainer.style.maxHeight = 'none';
+        tableContainer.style.overflow = 'visible';
+
+        setTimeout(() => {
+            html2canvas(area, {
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                windowWidth: area.scrollWidth,
+                windowHeight: area.scrollHeight
+            }).then(canvas => {
+                // NUEVO: 3. Restaurar los estilos a la normalidad en cuanto termine la foto
+                tableContainer.style.maxHeight = originalMaxHeight;
+                tableContainer.style.overflow = originalOverflow;
+
+                const link = document.createElement('a');
+                link.download = `Captura_Pedidos_${document.getElementById('input-semana-pedido').value}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Captura guardada';
+                lucide.createIcons();
+                setTimeout(() => { document.getElementById('mensaje-estado').innerHTML = oldText; }, 3000);
+            }).catch(err => {
+                // Restaurar estilos en caso de error
+                tableContainer.style.maxHeight = originalMaxHeight;
+                tableContainer.style.overflow = originalOverflow;
+                
+                console.error("Error al capturar:", err);
+                document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="alert-circle" style="color:#ef4444;"></i> Error en captura';
+                lucide.createIcons();
+            });
+        }, 300);
     }
 </script>
 
