@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.63.0</title>
+    <title>Visor Pro v10.64.0</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -162,7 +162,7 @@
 
 <div class="top-menu">
     <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.63.0</h1>
+        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.64.0</h1>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
         <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
@@ -192,7 +192,7 @@
 <div id="vista-visor">
     <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; align-items: center; justify-content: flex-start;">
         <div class="search-wrapper" style="flex-grow: 0; width: 300px;"> <i data-lucide="search"></i>
-            <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar sucursal o personal..." onkeyup="filtrarDatos()">
+            <input type="text" id="input-busqueda" class="search-input" list="lista-empleados-auto" placeholder="Buscar sucursal o personal..." onkeyup="filtrarDatos()">
         </div>
         
         <div id="filtro-dias-pedido" style="display: flex; gap: 4px; align-items: center;">
@@ -461,7 +461,10 @@
                     </div>
                 </div>
                 
-               <h3 style="display: flex; align-items: center; gap: 6px;"><i data-lucide="users"></i> Plantilla</h3>
+                <h3 style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span style="display: flex; align-items: center; gap: 6px;"><i data-lucide="users"></i> Plantilla</span>
+                    <input type="text" id="filtro-plantilla-local" placeholder="Filtrar en esta sucursal..." onkeyup="filtrarPlantillaLocal(this.value)" style="font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; width: 180px; font-weight: normal;">
+                </h3>
                 <table style="width: 100%;">
                     <thead>
                         <tr style="background: #f8fafc;">
@@ -560,8 +563,8 @@
      //     
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _part2 = "Y2J6YWpteGR1M2IwTS0zeUFYRlM3dE11TkFVWktaMGMydjBzWF81MEt";
-    const _part3 = "1eU9MRG5fY1pKbkJtOURucnRCZGlXYVFBUF8vZXhlYw";
+    const _part2 = "Y2J4blM2R0Z3R2cxYURvMXNaTXFSY3VCeU1zRE9weFpDYjBwZk9fQm";
+    const _part3 = "1CWi02QWotb1FfX2xFRHRla0ZGZl9uT055VGIvZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
     // Función universal para validar contraseñas por rol
@@ -751,7 +754,7 @@
             const contenedorFecha = document.getElementById('fecha-ultima-auditoria-global');
             if (contenedorFecha && detalleAuditoriaGlobal.length > 0) {
                 const fechasValidas = detalleAuditoriaGlobal
-                    .map(d => new Date(d.fechaAud))
+                    .map(d => new Date(d.gfechaAud))
                     .filter(d => !isNaN(d));
                     
                 if (fechasValidas.length > 0) {
@@ -1545,7 +1548,7 @@
 
         const ws = XLSX.utils.json_to_sheet(dataExcel);
         const wb = XLSX.utils.book_new(); 
-        XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
+        XLS.utils.book_append_sheet(wb, ws, "Pedidos");
         XLSX.writeFile(wb, `Pedidos_${semana}.xlsx`);
     }
     
@@ -2070,11 +2073,34 @@
     }
     
     function actualizarDataLists() {
-        document.getElementById('lista-supervisores-auto').innerHTML = [...new Set(sucursales.map(x => x.supervisor))].sort().map(x => `<option value="${x}">`).join('');
-        document.getElementById('lista-puestos-auto').innerHTML = [...new Set(plantillaGlobal.map(x => x.puesto))].sort().map(x => `<option value="${x}">`).join('');
-        document.getElementById('lista-empleados-auto').innerHTML = [...new Set(plantillaGlobal.map(x => `${x.noEmpleado} - ${x.nombre}`))].sort().map(x => `<option value="${x}">`).join('');
-        document.getElementById('lista-auditores-auto').innerHTML = auditoresGlobal.sort().map(x => `<option value="${x}">`).join('');
-    }
+    document.getElementById('lista-supervisores-auto').innerHTML = [...new Set(sucursales.map(x => x.supervisor))].sort().map(x => `<option value="${x}">`).join('');
+    
+    document.getElementById('lista-puestos-auto').innerHTML = [...new Set(plantillaGlobal.map(x => x.puesto))].sort().map(x => `<option value="${x}">`).join('');
+    
+    // --- SEGMENTO MODIFICADO PARA IDENTIFICAR PERSONAL DISPONIBLE ---
+    document.getElementById('lista-empleados-auto').innerHTML = plantillaGlobal.map(x => {
+        const suc = sucursales.find(s => s.claveSimi === x.claveSucursal);
+        
+        let textoContexto = "";
+        // Si no tiene clave de sucursal o viene en blanco, está disponible
+        if (!x.claveSucursal || x.claveSucursal.trim() === "") {
+            textoContexto = "🟢 DISPONIBLE (Sin Unidad)";
+        } 
+        // Si tiene clave y encontramos la sucursal
+        else if (suc) {
+            textoContexto = `Esta en la unidad de: ${suc.nombre}`;
+        } 
+        // Si tiene una clave pero por alguna razón no está en el visor actual
+        else {
+            textoContexto = `Asignado a clave FR/Simi: ${x.claveSucursal}`;
+        }
+        
+        return `<option value="${x.noEmpleado} - ${x.nombre}">${textoContexto}</option>`;
+    }).sort().join('');
+    // ----------------------------------------------------------------
+
+    document.getElementById('lista-auditores-auto').innerHTML = auditoresGlobal.sort().map(x => `<option value="${x}">`).join('');
+}
 
     function descargarExcelPlantilla() {
         if (!validarAcceso("EXCEL")) return;
@@ -2437,6 +2463,15 @@
                 lucide.createIcons();
             });
         }, 300);
+    }
+    
+    function filtrarPlantillaLocal(texto) {
+        const t = normalizarTexto(texto);
+        const filas = document.querySelectorAll('#tbody-plantilla tr');
+        filas.forEach(f => {
+            const contenido = normalizarTexto(f.innerText);
+            f.style.display = contenido.includes(t) ? '' : 'none';
+        });
     }
 </script>
 
