@@ -122,7 +122,7 @@
         .calendar-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .calendar-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .audit-event { background: #e0f2fe; border-left: 3px solid #0284c7; padding: 4px; margin-bottom: 4px; border-radius: 3px; font-size: 10px; color: #0c4a6e; cursor: pointer; display: flex; flex-direction: column; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: all 0.2s; }
+        .audit-event { background: #e0f2fe; border-left: 3px solid #0284c7; padding: 6px; margin-bottom: 4px; border-radius: 3px; font-size: 11px; color: #0c4a6e; cursor: pointer; display: flex; flex-direction: column; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: all 0.2s; }
         .audit-event:hover { background: #bae6fd; transform: scale(1.02); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .audit-event.pernocta { border-left-color: #7c3aed; background: #ede9fe; color: #4c1d95; }
         .audit-event.pernocta:hover { background: #ddd6fe; }
@@ -216,7 +216,7 @@
                     <tr>
                         <th>No</th><th>Sucursal</th><th style="text-align: center;">*</th><th>Supervisor</th>
                         <th style="text-align: center;">P. Aut</th><th style="text-align: center;">P. Real</th><th style="text-align: center;">Dif</th>
-                        <th>Vta Mensual</th><th>Pedido</th><th>Entrega</th><th>Estadística</th><th>Clave Simi</th><th>Teléfono</th><th>Correo</th>
+                        <th>Vta Prom Anual</th><th>Pedido</th><th>Entrega</th><th>Estadística</th><th>Clave Simi</th><th>Teléfono</th><th>Correo</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-body"></tbody>
@@ -1100,7 +1100,7 @@
                     }
                 }
 
-                const horaHtml = horaStr && !isDescanso ? `<div style="font-size:9px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px; color: #064e3b;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
+                const horaHtml = horaStr && !isDescanso ? `<div style="font-size:11px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px; color: #064e3b;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
                 const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="opacity: 0.85; margin-top:2px;"><i data-lucide="users" style="width:10px; height:10px;"></i> + ${a.apoyo}</div>` : '';
 
                 return `
@@ -1885,7 +1885,7 @@
                             <option value="ACTIVO">Activo</option>
                             <option value="REACTIVADO">Reactivado</option>
                             <option value="SANCION">Sanción</option>
-                            <option value="DESPIDO">Despido</option>
+                            <option value="RECESION">Recesión</option>
                             <option value="RENUNCIA">Renuncia</option>
                             <option value="ABANDONO">Abandono</option>
                             <option value="CAMBIO">Cambio</option>
