@@ -3,29 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v10.64.0</title>
+    <title>Visor Pro v11.1.0</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
         :root { 
             --primary: #0f172a; 
             --light: #f8fafc; 
             --border: #cbd5e1;
-            --text-dark: #1e293b;
+            --text-dark: #757575;
             --text-muted: #64748b;
+            --sidebar-bg: #ffffff;
+            --sidebar-hover: #00437e;
+            --sidebar-active: #979797;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 15px; color: var(--text-dark); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; color: var(--text-dark); overflow-x: hidden; }
         
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
 
-        .top-menu { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px;}
-        .top-menu h1 { margin: 0; color: var(--primary); font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        /* --- NUEVO LAYOUT SIDEBAR CON BOOTSTRAP --- */
+        #wrapper { display: flex; width: 100%; align-items: stretch; min-height: 100vh; }
         
-        .action-bar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        #sidebar-wrapper {
+            min-width: 260px;
+            max-width: 260px;
+            background-color: var(--sidebar-bg);
+            color: #bebdbd;
+            transition: margin 0.3s ease-out;
+            box-shadow: 2px 0 5px rgba(110, 110, 110, 0.1);
+            z-index: 1000;
+        }
         
+        #sidebar-wrapper.toggled { margin-left: -260px; }
+        
+        #page-content-wrapper { min-width: 0; width: 100%; transition: width 0.3s ease-out; display: flex; flex-direction: column; }
+        
+        .sidebar-heading { padding: 1.5rem 1.25rem; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        
+        .sidebar-nav-item {
+            color: #000000; padding: 12px 20px; display: flex !important; align-items: center; text-decoration: none; border-left: 4px solid transparent; font-size: 14px; transition: 0.2s; cursor: pointer;
+        }
+        
+        .sidebar-nav-item:hover { background-color: var(--sidebar-hover); color: #fff; }
+        .sidebar-nav-item.active { background-color: var(--sidebar-hover); color: #fff; border-left-color: var(--sidebar-active); font-weight: bold; }
+        .sidebar-nav-item i { margin-right: 10px; width: 18px; height: 18px; vertical-align: middle; }
+        
+        .collapse-indicator { transition: transform 0.2s; width: 14px !important; height: 14px !important; margin-right: 0 !important; }
+        .sidebar-nav-item:not(.collapsed) .collapse-indicator { transform: rotate(180deg); }
+        
+        .sidebar-subnav-item {
+            color: #ffffff; padding: 10px 20px 10px 45px; display: block; text-decoration: none; font-size: 13px; transition: 0.2s; cursor: pointer;
+        }
+        .sidebar-subnav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .sidebar-subnav-item.active { color: #fff; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .sidebar-subnav-item i { margin-right: 8px; width: 16px; height: 16px; vertical-align: middle; }
+
+        /* Navbar Superior */
+        .top-navbar { background-color: #ffffff; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+        /* --- ESTILOS ORIGINALES CONSERVADOS --- */
+        .action-bar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
         .search-wrapper { position: relative; flex-grow: 1; }
         .search-wrapper .lucide { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 18px; height: 18px; }
         .search-input { width: 100%; padding: 10px 15px 10px 35px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; box-sizing: border-box; outline: none; transition: 0.2s; }
@@ -40,7 +84,7 @@
         
         .lucide { width: 16px; height: 16px; stroke-width: 2.2; }
 
-        .card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .card-custom { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .table-container { overflow-x: auto; max-height: 80vh; border: 1px solid var(--border); border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; white-space: nowrap; }
         th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
@@ -50,8 +94,9 @@
         .fila-clickable:hover { background-color: #f1f5f9; }
         .fila-seleccionada { background-color: #e0f2fe !important; }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { background-color: #fff; padding: 25px; border-radius: 10px; width: 95%; max-width: 1100px; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        /* Modales */
+        .modal-custom { display: none; position: fixed; z-index: 1040; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-content-custom { background-color: #fff; padding: 25px; border-radius: 10px; width: 95%; max-width: 1100px; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: var(--text-muted); transition: 0.2s; }
         .close-btn:hover { color: #000; }
         
@@ -71,13 +116,11 @@
         .tag-baja { border: 1px solid #b91c1c; color: #b91c1c; background: #fee2e2; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
         .tag-actualizacion { border: 1px solid #0284c7; color: #0284c7; background: #e0f2fe; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight:bold; }
         
-        /* --- ESTILOS MEJORAS STAFF Y MOVIMIENTOS --- */
         .new-emp-inputs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 10px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 6px; }
         .new-emp-inputs input { flex: 1; min-width: 120px; font-size: 12px; }
         .mov-btn-wrapper { position: relative; display: inline-flex; }
-        .mov-badge { position: absolute; top: -8px; right: -8px; background: #b91c1c; color: white; border-radius: 99px; font-size: 10px; font-weight: bold; width: 18px; height: 18px; display: none; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .mov-badge { position: absolute; top: -8px; right: -8px; background: #b91c1c; color: white; border-radius: 99px; font-size: 10px; font-weight: bold; width: 18px; height: 18px; display: none; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; }
 
-        /* Estilos Módulo Auditorías */
         .audit-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 15px; margin-top: 15px; }
         .panel-audit { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
         .panel-audit h3 { margin-top: 0; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--text-dark); }
@@ -85,12 +128,7 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: bold; }
         .check-group { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; }
-        .nav-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 15px; padding-bottom: 5px; align-items: center; }
-        .tab-btn { background: none; border: none; font-size: 15px; font-weight: bold; color: var(--text-muted); cursor: pointer; padding: 5px 10px; transition: 0.2s; border-radius: 4px; }
-        .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .tab-btn:hover { background: #f1f5f9; }
         
-        /* --- ESTILOS MEJORAS FILTRO Y CONTADORES AUDITORÍA --- */
         .audit-filter-panel { display: flex; align-items: center; gap: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; flex-wrap: wrap; }
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: var(--text-dark); cursor: pointer; }
         .filter-group input { accent-color: var(--primary); transform: scale(1.1); margin: 0; }
@@ -99,11 +137,9 @@
         .badge-pending { background-color: #fef08a; color: #a16207; border: 1px solid #facc15; }
         .badge-scheduled { background-color: #dcfce7; color: #166534; border: 1px solid #4ade80; }
         
-        /* Colores para la lista de pendientes/programadas */
         .status-pending td { color: #ff8a4b !important; font-weight: normal !important; } 
         .status-scheduled td { color: #15803d !important; font-weight: normal !important; background-color: transparent !important; border-left: none !important; }
 
-        /* --- ESTILOS DEL CALENDARIO --- */
         .calendar-wrapper { margin-top: 20px; background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .calendar-header-row { display: grid; grid-template-columns: repeat(7, 1fr); background: #780303; border-bottom: 1px solid #ffffff; font-weight: bold; text-align: center; font-size: 12px; color: #ffffff; min-width: 750px; }
         .calendar-header-row div { padding: 8px; border-right: 1px solid var(--border); }
@@ -129,7 +165,6 @@
         .event-title { font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
         .event-subtitle { display: flex; align-items: center; gap: 3px; font-size: 9px; margin-top: 2px; opacity: 0.9; }
 
-        /* --- ESTILOS MODAL HALLAZGOS AUDITORÍA --- */
         .tabla-hallazgos { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px; border: 1px solid var(--border); }
         .tabla-hallazgos th, .tabla-hallazgos td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; color: var(--text-dark); }
         .tabla-hallazgos th { background-color: #e2e8f0; font-weight: bold; text-transform: uppercase; font-size: 10px; }
@@ -138,17 +173,18 @@
         .titulo-hallazgo { text-align: center; font-size: 12px; margin: 0 0 5px 0; font-weight: bold; text-transform: uppercase; color: #000; }
         .celda-nomina { background-color: #fde047 !important; color: #000 !important; font-weight: bold; text-align: center; }
 
-        /* Estilos para los botones de filtro por día */
         .btn-dia {padding: 6px 10px; min-width: 45px; justify-content: center; font-size: 11px; position: relative;  display: flex; flex-direction: column; align-items: center; gap: 2px;}
         .btn-dia.active { background-color: var(--primary); color: #fff; border-color: var(--primary); }
         
-        /* Estilo para el número pequeño del contador */
         .count-badge {font-size: 9px;background: rgba(15, 23, 42, 0.1); padding: 1px 5px;border-radius: 10px;font-weight: bold;}
         .btn-dia.active .count-badge {background: rgba(255, 255, 255, 0.2); color: #fff;}
 
-        /* Estilos Adicionales para Pedidos */
         .th-yellow { background-color: #fef08a !important; color: #854d0e !important; }
         .input-readonly { background-color: #f1f5f9; cursor: not-allowed; border: 1px solid var(--border); }
+        
+        #tabla-pedidos-captura { table-layout: fixed; width: 100%; border-collapse: collapse; }
+        #tabla-pedidos-captura th, #tabla-pedidos-captura td { padding: 4px !important; font-size: 11px !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
+        #tabla-pedidos-captura .input-capture { padding: 2px 6px !important; font-size: 11px !important; height: 26px; width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -160,281 +196,322 @@
 <datalist id="lista-puestos-auto"></datalist>
 <datalist id="lista-auditores-auto"></datalist>
 
-<div class="top-menu">
-    <div>
-        <h1><i data-lucide="layers"></i> Directorio Sucursales Genéricos del Trópico v10.64.0</h1>
-    </div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="menu-botones-global">
-        <button class="menu-btn btn-audit" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i>Pedidos</button>
-        <button class="menu-btn btn-audit" onclick="abrirModuloAuditorias()"><i data-lucide="calendar-check"></i>Calendario</button>        
-        <button class="menu-btn btn-audit" onclick="abrirDetalleAuditoria()"><i data-lucide="clipboard-check"></i>Detalle Aud.</button>        
-        <div class="mov-btn-wrapper">
-            <div id="mov-badge-id" class="mov-badge">0</div>
-            <button class="menu-btn" style="width: 100%;" onclick="abrirHistorial()"><i data-lucide="bell"></i> Movimientos</button>
-        </div>
-        
-        <button class="menu-btn" onclick="solicitarCargaCSV()"><i data-lucide="upload"></i> Subir Ventas</button>
-        <button class="menu-btn" onclick="descargarExcelPlantilla()"><i data-lucide="download"></i> Excel</button>
-        <button id="btn-actualizar" class="menu-btn btn-dark" onclick="descargarDatosDeAPI()"><i data-lucide="refresh-cw"></i> Sincronizar</button>
-    </div>
-</div>
-
-<div class="action-bar">
-    <div class="nav-tabs">
-        <button class="tab-btn active" id="tab-visor" onclick="cambiarVista('visor')"><i data-lucide="layout-grid" style="vertical-align: middle;"></i> Visor de Sucursales</button>
-        <button class="tab-btn" id="tab-pedidos" onclick="cambiarVista('pedidos')" style="display: none;"><i data-lucide="shopping-cart" style="vertical-align: middle;"></i> Pedidos</button>
-        <button class="tab-btn" id="tab-auditoria" onclick="cambiarVista('auditoria')" style="display: none;"><i data-lucide="calendar" style="vertical-align: middle;"></i> Calendario Auditorías</button>
-        <button class="tab-btn" id="tab-detalle-auditoria" onclick="cambiarVista('detalle-auditoria')" style="display: none;"><i data-lucide="clipboard-list" style="vertical-align: middle;"></i> Detalle de auditoría</button>
-    </div>
-    <div id="mensaje-estado" style="margin-left: auto;">Listo</div>
-</div>
-
-<div id="vista-visor">
-    <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; align-items: center; justify-content: flex-start;">
-        <div class="search-wrapper" style="flex-grow: 0; width: 300px;"> <i data-lucide="search"></i>
-            <input type="text" id="input-busqueda" class="search-input" list="lista-empleados-auto" placeholder="Buscar sucursal o personal..." onkeyup="filtrarDatos()">
-        </div>
-        
-        <div id="filtro-dias-pedido" style="display: flex; gap: 4px; align-items: center;">
-            <button class="menu-btn btn-dia active" onclick="setDiaFiltro('TODOS', this)"> <span>TODOS</span><span class="count-badge" id="cnt-todos">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('LUNES', this)"><span>L</span><span class="count-badge" id="cnt-lunes">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('MARTES', this)"><span>M</span><span class="count-badge" id="cnt-martes">0</span> </button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('MIERCOLES', this)"><span>X</span><span class="count-badge" id="cnt-miercoles">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('JUEVES', this)"><span>J</span><span class="count-badge" id="cnt-jueves">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('VIERNES', this)"><span>V</span><span class="count-badge" id="cnt-viernes">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('SABADO', this)"><span>S</span><span class="count-badge" id="cnt-sabado">0</span></button>
-            <button class="menu-btn btn-dia" onclick="setDiaFiltro('DOMINGO', this)"><span>D</span><span class="count-badge" id="cnt-domingo">0</span></button>
-            <button class="menu-btn btn-dark" style="margin-left: 10px; background-color: #0284c7; border-color: #0369a1;" onclick="abrirModalNuevaSucursal()">
-                <i data-lucide="plus-circle"></i> Nueva Sucursal
-            </button>
-        </div>
-    </div>
-    <div class="card">
-        <div class="table-container">
-            <table id="tabla-sucursales">
-                <thead>
-                    <tr>
-                        <th>No</th><th>Sucursal</th><th style="text-align: center;">*</th><th>Supervisor</th>
-                        <th style="text-align: center;">P. Aut</th><th style="text-align: center;">P. Real</th><th style="text-align: center;">Dif</th>
-                        <th>Vta Prom Anual</th><th>Pedido</th><th>Entrega</th><th>Estadística</th><th>Clave Simi</th><th>Teléfono</th><th>Correo</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-body"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="vista-pedidos" style="display: none;">
-    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
-        <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar"></i> Semana de Pedido:</label>
-        <input type="week" id="input-semana-pedido" class="edit-combo" style="width: auto; padding: 4px 10px;" title="Selecciona la semana a trabajar">
-        
-        <button class="menu-btn btn-audit" onclick="consultarPedidosSemana()"><i data-lucide="search"></i> Buscar Histórico</button>
-        <button class="menu-btn" onclick="limpiarTablaPedidos()"><i data-lucide="eraser"></i> Limpiar Captura</button>
-
-        <div style="margin-left: auto;">
-            <button class="menu-btn btn-dark" onclick="guardarPedidos()"><i data-lucide="save"></i> Guardar Pedidos</button>
-        </div>
-    </div>
+<div id="wrapper">
     
-    <div class="card" id="area-captura-pedidos">
-        <style>
-            #tabla-pedidos-captura { table-layout: fixed; width: 100%; border-collapse: collapse; }
-            #tabla-pedidos-captura th, #tabla-pedidos-captura td { padding: 4px !important; font-size: 11px !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
-            #tabla-pedidos-captura .input-capture { padding: 2px 6px !important; font-size: 11px !important; height: 26px; width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 3px; }
-        </style>
+    <div id="sidebar-wrapper" class="d-flex flex-column">
+        <div class="sidebar-heading text-light">
+            <i data-lucide="layers"></i> 
+            <div>Visor Pro <span class="badge bg-primary fs-6 ms-1">v11.1.0</span></div>
+        </div>
+        <div class="list-group list-group-flush flex-grow-1 mt-2">
+            <a class="sidebar-nav-item active" id="tab-visor" onclick="cambiarVista('visor')">
+                <i data-lucide="layout-grid"></i> Visor de Sucursales
+            </a>
 
-        <div style="display: flex; gap: 15px; margin-bottom: 15px; background: #f8fafc; padding: 8px 15px; border-radius: 6px; border: 1px dashed var(--border); align-items: center; flex-wrap: wrap;">
-            <div class="search-wrapper" style="flex-grow: 1; max-width: 250px;">
-                <i data-lucide="search"></i>
-                <input type="text" id="filtro-tabla-pedidos" class="search-input" placeholder="Día, Sucursal o Clave..." onkeyup="filtrarPedidosVisual()" style="padding: 4px 10px 4px 30px; font-size: 12px; height: 32px;">
+            <a class="sidebar-nav-item collapsed" data-bs-toggle="collapse" href="#menu-negocios" role="button" aria-expanded="false">
+                <i data-lucide="briefcase"></i> Negocios <i data-lucide="chevron-down" class="ms-auto collapse-indicator"></i>
+            </a>
+            <div class="collapse bg-dark" id="menu-negocios">
+                <a class="sidebar-subnav-item" onclick="solicitarCargaCSV()"><i data-lucide="upload"></i> Subir Ventas</a>
+                <a class="sidebar-subnav-item" onclick="descargarExcelPlantilla()"><i data-lucide="download"></i> Excel</a>
+                <a class="sidebar-subnav-item" id="tab-auditoria" onclick="abrirModuloAuditorias()"><i data-lucide="calendar"></i> Calendario</a>
+            </div>
+
+            <a class="sidebar-nav-item collapsed" data-bs-toggle="collapse" href="#menu-estadisticas" role="button" aria-expanded="false">
+                <i data-lucide="bar-chart-2"></i> Estadísticas <i data-lucide="chevron-down" class="ms-auto collapse-indicator"></i>
+            </a>
+            <div class="collapse bg-dark" id="menu-estadisticas">
+                <a class="sidebar-subnav-item" id="tab-pedidos" onclick="abrirModuloPedidos()"><i data-lucide="shopping-cart"></i> Pedidos</a>
+                <a class="sidebar-subnav-item" onclick="abrirModalNuevaSucursal()"><i data-lucide="plus-circle"></i> Nueva Sucursal</a>
+            </div>
+
+            <a class="sidebar-nav-item" id="tab-detalle-auditoria" onclick="abrirDetalleAuditoria()">
+                <i data-lucide="clipboard-list"></i> Detalle de auditoría
+            </a>
+        </div>
+    </div>
+
+    <div id="page-content-wrapper">
+        
+        <nav class="top-navbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm" id="menu-toggle" title="Contraer/Expandir Menú">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="text-muted" style="font-size: 15px;">Directorio Sucursales Genéricos del Trópico v11.1.0</div>
             </div>
             
-            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: var(--text-dark);">
-                <input type="checkbox" id="chk-con-folio" onchange="filtrarPedidosVisual()" style="accent-color: var(--primary); transform: scale(1.2);"> Filtro con Pedido
-            </label>
-
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <i data-lucide="calendar-search" style="color: var(--text-muted); width: 16px; height: 16px;"></i>
-                <input type="date" id="filtro-fecha-captura" class="edit-combo" style="width: auto; height: 32px; padding: 4px 10px; font-size: 12px;" onchange="filtrarPedidosVisual()" title="Filtrar por fecha de captura (Hora Sistema)">
+            <div class="d-flex flex-wrap gap-2 align-items-center" id="menu-botones-global">       
+                <div class="mov-btn-wrapper ms-2 me-2">
+                    <div id="mov-badge-id" class="mov-badge">0</div>
+                    <button class="menu-btn" style="width: 100%;" onclick="abrirHistorial()"><i data-lucide="bell"></i> Movimientos</button>
+                </div>
+                <button id="btn-actualizar" class="menu-btn btn-dark" onclick="descargarDatosDeAPI()"><i data-lucide="refresh-cw"></i> Sincronizar</button>
+                <div id="mensaje-estado" class="ms-2">Listo</div>
             </div>
+        </nav>
 
-            <button class="menu-btn" onclick="descargarExcelPedidos()" style="background: #16a34a; color: white; border-color: #15803d; height: 32px;"><i data-lucide="file-spreadsheet"></i> Descargar Excel</button>
+        <div class="container-fluid py-4 px-4">
             
-            <button class="menu-btn" onclick="tomarCapturaPedidos()" style="background: #dbcef8; color: white; border-color: #7c3aed; height: 32px;"><i data-lucide="camera"></i> Capturar</button>
-
-            <div style="display: flex; gap: 20px; text-align: right; margin-left: auto;">
-                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Vta Semanal:</strong> <br><span id="tot-vta-semanal" style="color: #bd921c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
-                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Pedido:</strong> <br><span id="tot-importe" style="color: #0715d1; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
-                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Descuento 35%:</strong> <br><span id="tot-descuento" style="color: #b91c1c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
-                <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Final:</strong> <br><span id="tot-final" style="color: #15803d; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
-            </div>
-        </div>
-
-        <div class="table-container">
-            <table id="tabla-pedidos-captura">
-                <thead>
-                    <tr>
-                        <th style="width: 20%; min-width: 150px;">Sucursal (FR | Nombre)</th>
-                        <th style="width: 10%;">Vta Semanal</th>
-                        <th style="width: 10%;">Estadística</th>
-                        <th style="width: 10%;">Día Pedido</th> 
-                        <th class="th-yellow" style="width: 12%;">Tipo Pedido</th>
-                        <th class="th-yellow" style="width: 14%;">Importe Pedido</th>
-                        <th class="th-yellow" style="width: 12%;">Descuento (35%)</th>
-                        <th class="th-yellow" style="width: 12%;">Importe Final</th>
-                        <th class="th-yellow" style="width: 8%;">Folio</th>
-                </thead>
-                <tbody id="body-pedidos">
-                    <tr><td colspan="9" style="text-align:center; padding:20px;">Cargando información...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="vista-auditoria" style="display: none;">
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
-        <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="filter"></i> Filtrar por Mes:</label>
-        <input type="month" id="filtro-mes-auditoria" class="edit-combo" style="width: auto; padding: 4px 10px;" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();">
-        <div id="contadores-auditores" style="display: flex; gap: 8px; flex-shrink: wrap; margin-left: auto;"></div>
-        <button id="btn-sync-lote" class="menu-btn btn-dark" style="display:none; background-color: #10b981; border-color: #059669; margin-left: 10px;" onclick="sincronizarLoteAuditorias()">
-            <i data-lucide="cloud-upload"></i> Subir Cambios 
-            <span id="badge-lote" style="background: white; color: #059669; padding: 2px 6px; border-radius: 99px; font-size: 11px; font-weight: bold; margin-left: 5px;">0</span>
-        </button>
-    </div>
-
-    <div class="audit-grid">
-        <div class="panel-audit">
-            <h3><span><i data-lucide="calendar-clock"></i> Programadas Activas</span></h3>
-            <div class="panel-scroll">
-                <table style="font-size: 11px;">
-                    <thead><tr><th>Sucursal</th><th>Fecha</th></tr></thead>
-                    <tbody id="tbody-programadas"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="panel-audit">
-            <h3><span><i data-lucide="store"></i> Seleccionar Unidad</span></h3>
-            <div class="audit-filter-panel">
-                <label class="filter-group"><input type="radio" name="auditStatusFilter" value="all" checked onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Todas</label>
-                <label class="filter-group" style="color:#ea580c;"><input type="radio" name="auditStatusFilter" value="pending" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Pendientes</label>
-                <label class="filter-group tag-alta" style="color:#15803d; border:none; background:none;"><input type="radio" name="auditStatusFilter" value="scheduled" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Programadas</label>
-                
-                <div class="counters-panel">
-                    <div class="counter-badge badge-pending" id="counter-pending" title="Pendientes de este mes">0</div>
-                    <div class="counter-badge badge-scheduled" id="counter-scheduled" title="Programadas este mes">0</div>
+            <div id="vista-visor">
+                <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; align-items: center; justify-content: flex-start;">
+                    <div class="search-wrapper" style="flex-grow: 0; width: 300px;"> <i data-lucide="search"></i>
+                        <input type="text" id="input-busqueda" class="search-input" list="lista-empleados-auto" placeholder="Buscar sucursal o personal..." onkeyup="filtrarDatos()">
+                    </div>
+                    
+                    <div id="filtro-dias-pedido" style="display: flex; gap: 4px; align-items: center; overflow-x: auto; padding-bottom: 5px;">
+                        <button class="menu-btn btn-dia active" onclick="setDiaFiltro('TODOS', this)"> <span>TODOS</span><span class="count-badge" id="cnt-todos">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('LUNES', this)"><span>L</span><span class="count-badge" id="cnt-lunes">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('MARTES', this)"><span>M</span><span class="count-badge" id="cnt-martes">0</span> </button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('MIERCOLES', this)"><span>X</span><span class="count-badge" id="cnt-miercoles">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('JUEVES', this)"><span>J</span><span class="count-badge" id="cnt-jueves">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('VIERNES', this)"><span>V</span><span class="count-badge" id="cnt-viernes">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('SABADO', this)"><span>S</span><span class="count-badge" id="cnt-sabado">0</span></button>
+                        <button class="menu-btn btn-dia" onclick="setDiaFiltro('DOMINGO', this)"><span>D</span><span class="count-badge" id="cnt-domingo">0</span></button>
+                    </div>
+                </div>
+                <div class="card-custom">
+                    <div class="table-container">
+                        <table id="tabla-sucursales">
+                            <thead>
+                                <tr>
+                                    <th>No</th><th>Sucursal</th><th style="text-align: center;">*</th><th>Supervisor</th>
+                                    <th style="text-align: center;">P. Aut</th><th style="text-align: center;">P. Real</th><th style="text-align: center;">Dif</th>
+                                    <th>Vta Prom Anual</th><th>Pedido</th><th>Entrega</th><th>Estadística</th><th>Clave Simi</th><th>Teléfono</th><th>Correo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div class="search-wrapper" style="margin-bottom: 8px;">
-                <i data-lucide="search" style="width:14px; height:14px;"></i>
-                <input type="text" class="search-input" style="padding: 6px 10px 6px 28px; font-size:12px;" placeholder="Filtrar unidad..." onkeyup="filtrarPendientes(this.value)">
-            </div>
-            <div class="panel-scroll">
-                <table style="font-size: 11px;">
-                    <thead><tr><th>Sucursal (Indicador del Mes)</th><th>Pedido</th></tr></thead>
-                    <tbody id="tbody-pendientes"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <div class="panel-audit">
-            <h3><span><i data-lucide="clipboard-list"></i> Historial de la unidad</span></h3>
-            <div class="panel-scroll" style="max-height: 150px; margin-bottom: 15px;">
-                <table style="font-size: 11px;">
-                    <thead><tr><th>Fecha</th><th>Auditor</th><th>Status / Acción</th></tr></thead>
-                    <tbody id="tbody-auditorias-unidad">
-                        <tr><td colspan="3" style="text-align:center; color:#94a3b8;">Selecciona una unidad</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <div id="vista-pedidos" style="display: none;">
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
+                    <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar"></i> Semana de Pedido:</label>
+                    <input type="week" id="input-semana-pedido" class="edit-combo" style="width: auto; padding: 4px 10px;" title="Selecciona la semana a trabajar">
+                    
+                    <button class="menu-btn btn-audit" onclick="consultarPedidosSemana()"><i data-lucide="search"></i> Buscar Histórico</button>
+                    <button class="menu-btn" onclick="limpiarTablaPedidos()"><i data-lucide="eraser"></i> Limpiar Captura</button>
 
-            <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid var(--border);">
-                <div id="lbl-unidad-seleccionada" style="font-weight: bold; color: var(--primary); margin-bottom: 15px; font-size: 14px;">Unidad: ---</div>
-                
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px;">
-                    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                        <label>Auditor Líder:</label>
-                        <input type="text" id="input-auditor" class="edit-combo" list="lista-auditores-auto" placeholder="Nombre del auditor principal...">
-                    </div>
-                    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                        <label>Auditor(es) de Apoyo:</label>
-                        <input type="text" id="input-apoyo" class="edit-combo" placeholder="Ej. Juan, María (Opcional)">
+                    <div style="margin-left: auto;">
+                        <button class="menu-btn btn-dark" onclick="guardarPedidos()"><i data-lucide="save"></i> Guardar Pedidos</button>
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                    <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 130px;">
-                        <label><i data-lucide="calendar"></i> Fecha:</label>
-                        <input type="date" id="input-fecha-auditoria" class="edit-combo">
+                <div class="card-custom" id="area-captura-pedidos">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px; background: #f8fafc; padding: 8px 15px; border-radius: 6px; border: 1px dashed var(--border); align-items: center; flex-wrap: wrap;">
+                        <div class="search-wrapper" style="flex-grow: 1; max-width: 250px;">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="filtro-tabla-pedidos" class="search-input" placeholder="Día, Sucursal o Clave..." onkeyup="filtrarPedidosVisual()" style="padding: 4px 10px 4px 30px; font-size: 12px; height: 32px;">
+                        </div>
+                        
+                        <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: var(--text-dark);">
+                            <input type="checkbox" id="chk-con-folio" onchange="filtrarPedidosVisual()" style="accent-color: var(--primary); transform: scale(1.2);"> Filtro con Pedido
+                        </label>
+
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <i data-lucide="calendar-search" style="color: var(--text-muted); width: 16px; height: 16px;"></i>
+                            <input type="date" id="filtro-fecha-captura" class="edit-combo" style="width: auto; height: 32px; padding: 4px 10px; font-size: 12px;" onchange="filtrarPedidosVisual()" title="Filtrar por fecha de captura (Hora Sistema)">
+                        </div>
+
+                        <button class="menu-btn" onclick="descargarExcelPedidos()" style="background: #16a34a; color: white; border-color: #15803d; height: 32px;"><i data-lucide="file-spreadsheet"></i> Descargar Excel</button>
+                        
+                        <button class="menu-btn" onclick="tomarCapturaPedidos()" style="background: #dbcef8; color: white; border-color: #7c3aed; height: 32px;"><i data-lucide="camera"></i> Capturar</button>
+
+                        <div style="display: flex; gap: 20px; text-align: right; margin-left: auto;">
+                            <div style="min-width: 120px; font-size: 12px;"><strong>Σ Vta Semanal:</strong> <br><span id="tot-vta-semanal" style="color: #bd921c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                            <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Pedido:</strong> <br><span id="tot-importe" style="color: #0715d1; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                            <div style="min-width: 120px; font-size: 12px;"><strong>Σ Descuento 35%:</strong> <br><span id="tot-descuento" style="color: #b91c1c; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                            <div style="min-width: 120px; font-size: 12px;"><strong>Σ Importe Final:</strong> <br><span id="tot-final" style="color: #15803d; font-size: 16px; font-weight: bold;">$ 0.00</span></div>
+                        </div>
                     </div>
-                    <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 100px;">
-                        <label><i data-lucide="clock"></i> Hora:</label>
-                        <input type="time" id="input-hora-auditoria" class="edit-combo">
+
+                    <div class="table-container">
+                        <table id="tabla-pedidos-captura">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%; min-width: 150px;">Sucursal (FR | Nombre)</th>
+                                    <th style="width: 10%;">Vta Semanal</th>
+                                    <th style="width: 10%;">Estadística</th>
+                                    <th style="width: 10%;">Día Pedido</th> 
+                                    <th class="th-yellow" style="width: 12%;">Tipo Pedido</th>
+                                    <th class="th-yellow" style="width: 14%;">Importe Pedido</th>
+                                    <th class="th-yellow" style="width: 12%;">Descuento (35%)</th>
+                                    <th class="th-yellow" style="width: 12%;">Importe Final</th>
+                                    <th class="th-yellow" style="width: 8%;">Folio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-pedidos">
+                                <tr><td colspan="9" style="text-align:center; padding:20px;">Cargando información...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="check-group" style="margin-bottom: 8px;">
-                        <input type="checkbox" id="chk-pernocta" style="accent-color: var(--primary); transform: scale(1.2);"> Pernocta
+                </div>
+            </div>
+
+            <div id="vista-auditoria" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
+                    <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="filter"></i> Filtrar por Mes:</label>
+                    <input type="month" id="filtro-mes-auditoria" class="edit-combo" style="width: auto; padding: 4px 10px;" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();">
+                    <div id="contadores-auditores" style="display: flex; gap: 8px; flex-shrink: wrap; margin-left: auto;"></div>
+                    <button id="btn-sync-lote" class="menu-btn btn-dark" style="display:none; background-color: #10b981; border-color: #059669; margin-left: 10px;" onclick="sincronizarLoteAuditorias()">
+                        <i data-lucide="cloud-upload"></i> Subir Cambios 
+                        <span id="badge-lote" style="background: white; color: #059669; padding: 2px 6px; border-radius: 99px; font-size: 11px; font-weight: bold; margin-left: 5px;">0</span>
+                    </button>
+                </div>
+
+                <div class="audit-grid">
+                    <div class="panel-audit">
+                        <h3><span><i data-lucide="calendar-clock"></i> Programadas Activas</span></h3>
+                        <div class="panel-scroll">
+                            <table style="font-size: 11px;">
+                                <thead><tr><th>Sucursal</th><th>Fecha</th></tr></thead>
+                                <tbody id="tbody-programadas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel-audit">
+                        <h3><span><i data-lucide="store"></i> Seleccionar Unidad</span></h3>
+                        <div class="audit-filter-panel">
+                            <label class="filter-group"><input type="radio" name="auditStatusFilter" value="all" checked onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Todas</label>
+                            <label class="filter-group" style="color:#ea580c;"><input type="radio" name="auditStatusFilter" value="pending" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Pendientes</label>
+                            <label class="filter-group tag-alta" style="color:#15803d; border:none; background:none;"><input type="radio" name="auditStatusFilter" value="scheduled" onchange="renderizarListasAuditoria(); siHayUnidadSeleccionadaRefrescar();"> Programadas</label>
+                            
+                            <div class="counters-panel">
+                                <div class="counter-badge badge-pending" id="counter-pending" title="Pendientes de este mes">0</div>
+                                <div class="counter-badge badge-scheduled" id="counter-scheduled" title="Programadas este mes">0</div>
+                            </div>
+                        </div>
+                        <div class="search-wrapper" style="margin-bottom: 8px;">
+                            <i data-lucide="search" style="width:14px; height:14px;"></i>
+                            <input type="text" class="search-input" style="padding: 6px 10px 6px 28px; font-size:12px;" placeholder="Filtrar unidad..." onkeyup="filtrarPendientes(this.value)">
+                        </div>
+                        <div class="panel-scroll">
+                            <table style="font-size: 11px;">
+                                <thead><tr><th>Sucursal (Indicador del Mes)</th><th>Pedido</th></tr></thead>
+                                <tbody id="tbody-pendientes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel-audit">
+                        <h3><span><i data-lucide="clipboard-list"></i> Historial de la unidad</span></h3>
+                        <div class="panel-scroll" style="max-height: 150px; margin-bottom: 15px;">
+                            <table style="font-size: 11px;">
+                                <thead><tr><th>Fecha</th><th>Auditor</th><th>Status / Acción</th></tr></thead>
+                                <tbody id="tbody-auditorias-unidad">
+                                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">Selecciona una unidad</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid var(--border);">
+                            <div id="lbl-unidad-seleccionada" style="font-weight: bold; color: var(--primary); margin-bottom: 15px; font-size: 14px;">Unidad: ---</div>
+                            
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px;">
+                                <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                                    <label>Auditor Líder:</label>
+                                    <input type="text" id="input-auditor" class="edit-combo" list="lista-auditores-auto" placeholder="Nombre del auditor principal...">
+                                </div>
+                                <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                                    <label>Auditor(es) de Apoyo:</label>
+                                    <input type="text" id="input-apoyo" class="edit-combo" placeholder="Ej. Juan, María (Opcional)">
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                                <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 130px;">
+                                    <label><i data-lucide="calendar"></i> Fecha:</label>
+                                    <input type="date" id="input-fecha-auditoria" class="edit-combo">
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 100px;">
+                                    <label><i data-lucide="clock"></i> Hora:</label>
+                                    <input type="time" id="input-hora-auditoria" class="edit-combo">
+                                </div>
+                                <div class="check-group" style="margin-bottom: 8px;">
+                                    <input type="checkbox" id="chk-pernocta" style="accent-color: var(--primary); transform: scale(1.2);"> Pernocta
+                                </div>
+                            </div>
+
+                            <div style="text-align: right; margin-top: 15px;">
+                                <button class="menu-btn btn-dark" style="display: inline-flex;" onclick="guardarAuditoria()"><i data-lucide="thumbs-up"></i> Programar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div style="text-align: right; margin-top: 15px;">
-                    <button class="menu-btn btn-dark" style="display: inline-flex;" onclick="guardarAuditoria()"><i data-lucide="thumbs-up"></i> Programar</button>
+                <div class="calendar-wrapper">
+                    <div style="padding: 10px 15px; border-bottom: 1px solid var(--border); background: #fff;">
+                        <h3 style="margin: 0; font-size: 14px; color: var(--text-dark); display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="calendar-days"></i> Vista General del Mes
+                        </h3>
+                    </div>
+                    <div class="calendar-header-row">
+                        <div>Lunes</div><div>Martes</div><div>Miércoles</div><div>Jueves</div><div>Viernes</div><div>Sábado</div><div>Domingo</div>
+                    </div>
+                    <div id="calendario-dias" class="calendar-grid-days">
+                        </div>
+                </div>
+
+            </div>
+            
+            <div id="vista-detalle-auditoria" style="display: none;">
+                <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar"></i> Filtrar Mes:</label>
+                        <input type="month" id="filtro-mes-detalle" class="edit-combo" style="width: auto; padding: 4px 10px;" onchange="renderizarDetalleAuditoria()">
+                    </div>
+                    <div class="search-wrapper" style="flex-grow: 1; max-width: 300px;">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="input-busqueda-detalle" class="search-input" placeholder="Buscar sucursal o clave..." onkeyup="renderizarDetalleAuditoria()">
+                    </div>
+                    <div id="contadores-auditores-detalle" style="display: flex; gap: 8px; flex-shrink: wrap; margin-left: auto;"></div>
+                </div>
+                
+                <div class="card-custom">
+                    <div class="table-container">
+                        <table id="tabla-detalle-auditoria">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">No</th>
+                                    <th style="text-align: center; width: 100px;">Auditada</th>
+                                    <th>Clave Simi</th>
+                                    <th>Clave FR</th>
+                                    <th>Sucursal</th>
+                                    <th>Pedido</th>
+                                    <th>Auditor</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-detalle-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="calendar-wrapper">
-        <div style="padding: 10px 15px; border-bottom: 1px solid var(--border); background: #fff;">
-            <h3 style="margin: 0; font-size: 14px; color: var(--text-dark); display: flex; align-items: center; gap: 6px;">
-                <i data-lucide="calendar-days"></i> Vista General del Mes
-            </h3>
-        </div>
-        <div class="calendar-header-row">
-            <div>Lunes</div><div>Martes</div><div>Miércoles</div><div>Jueves</div><div>Viernes</div><div>Sábado</div><div>Domingo</div>
-        </div>
-        <div id="calendario-dias" class="calendar-grid-days">
-            </div>
-    </div>
-
-</div>
-<div id="vista-detalle-auditoria" style="display: none;">
-    <div class="action-bar" style="margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">
-            <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar"></i> Filtrar Mes:</label>
-            <input type="month" id="filtro-mes-detalle" class="edit-combo" style="width: auto; padding: 4px 10px;" onchange="renderizarDetalleAuditoria()">
-        </div>
-        <div class="search-wrapper" style="flex-grow: 1; max-width: 300px;">
-            <i data-lucide="search"></i>
-            <input type="text" id="input-busqueda-detalle" class="search-input" placeholder="Buscar sucursal o clave..." onkeyup="renderizarDetalleAuditoria()">
-        </div>
-        <div id="contadores-auditores-detalle" style="display: flex; gap: 8px; flex-shrink: wrap; margin-left: auto;"></div>
-    </div>
-    
-    <div class="card">
-        <div class="table-container">
-            <table id="tabla-detalle-auditoria">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;">No</th>
-                        <th style="text-align: center; width: 100px;">Auditada</th>
-                        <th>Clave Simi</th>
-                        <th>Clave FR</th>
-                        <th>Sucursal</th>
-                        <th>Pedido</th>
-                        <th>Auditor</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-detalle-body"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-<div id="modal-detalles" class="modal">
+        </div> </div> </div> <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
     <div class="modal-content">
+      <div class="modal-header bg-dark text-white py-2">
+        <h5 class="modal-title fs-6"><i data-lucide="lock" style="width: 16px; height: 16px;"></i> Autenticación</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pb-0">
+        <label id="password-msg" class="form-label small mb-1">Ingresa tu contraseña:</label>
+        <input type="password" id="password-input" class="form-control form-control-sm mb-3" autocomplete="off" placeholder="••••••••">
+      </div>
+      <div class="modal-footer py-1">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-password">Entrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-detalles" class="modal-custom">
+    <div class="modal-content-custom">
         <span class="close-btn" onclick="cerrarModal('modal-detalles')"><i data-lucide="x"></i></span>
         <h2 id="modal-titulo" style="margin-top:0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;"></h2>
         
@@ -492,8 +569,8 @@
     </div>
 </div>
 
-<div id="modal-historial" class="modal">
-    <div class="modal-content" style="max-width: 1000px;">
+<div id="modal-historial" class="modal-custom">
+    <div class="modal-content-custom" style="max-width: 1000px;">
         <span class="close-btn" onclick="cerrarModal('modal-historial')"><i data-lucide="x"></i></span>
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-top:0;">
             <h2 style="margin:0; color: var(--primary); display: flex; align-items: center; gap: 8px;"><i data-lucide="activity"></i> Movimientos e Informes</h2>
@@ -512,8 +589,8 @@
         </div>
     </div>
 </div>
-<div id="modal-hallazgos" class="modal">
-    <div class="modal-content" style="max-width: 900px;">
+<div id="modal-hallazgos" class="modal-custom">
+    <div class="modal-content-custom" style="max-width: 900px;">
         <span class="close-btn" onclick="cerrarModal('modal-hallazgos')"><i data-lucide="x"></i></span>
         <div style="border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-top:0; margin-bottom: 15px;">
             <h2 id="modal-hallazgos-titulo" style="margin:0; color: var(--primary); display: flex; align-items: center; gap: 8px;"></h2>
@@ -523,11 +600,11 @@
     </div>
 </div>
 
-<div id="modal-nueva-sucursal" class="modal">
-    <div class="modal-content" style="max-width: 850px;">
+<div id="modal-nueva-sucursal" class="modal-custom">
+    <div class="modal-content-custom" style="max-width: 850px;">
         <span class="close-btn" onclick="cerrarModal('modal-nueva-sucursal')"><i data-lucide="x"></i></span>
         <h2 style="margin-top:0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="store"></i> Registrar Nueva Sucursal (v10.63.0)
+            <i data-lucide="store"></i> Registrar Nueva Sucursal (v11.1.0)
         </h2>
         
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;">
@@ -558,22 +635,81 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     lucide.createIcons();
-     //     
+    
+    // --- LÓGICA DEL SIDEBAR BOOTSTRAP ---
+    document.getElementById("menu-toggle").addEventListener("click", function(e) {
+        e.preventDefault();
+        document.getElementById("sidebar-wrapper").classList.toggle("toggled");
+    });
+    
+    // --- LÓGICA PARA EL MODAL DE CONTRASEÑA ENMASCARADA ---
+    let passwordResolve = null;
+
+    function solicitarPassword(mensaje = "Ingresa tu contraseña:") {
+        return new Promise((resolve) => {
+            document.getElementById('password-msg').innerText = mensaje;
+            const input = document.getElementById('password-input');
+            input.value = '';
+            
+            const modalEl = document.getElementById('passwordModal');
+            const modal = new bootstrap.Modal(modalEl);
+            
+            passwordResolve = resolve;
+            
+            modal.show();
+            
+            // Auto enfocar el input
+            modalEl.addEventListener('shown.bs.modal', function () {
+                input.focus();
+            }, {once: true});
+            
+            // Si el modal se cierra por fuera, resolver con null
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                if (passwordResolve) {
+                    passwordResolve(null);
+                    passwordResolve = null;
+                }
+            }, {once: true});
+        });
+    }
+
+    document.getElementById('btn-confirm-password').addEventListener('click', () => {
+        if (passwordResolve) {
+            const val = document.getElementById('password-input').value;
+            const resolveFn = passwordResolve;
+            passwordResolve = null; // Limpiar para que el 'hidden' event no lo machaque
+            
+            const modalEl = document.getElementById('passwordModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            
+            resolveFn(val);
+        }
+    });
+
+    // Enter en el teclado
+    document.getElementById('password-input').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('btn-confirm-password').click();
+        }
+    });
+
     // --- SEGMENTO ACTUALIZADO: OFUSCACIÓN DE API_URL ---
     const _part1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
     const _part2 = "Y2J4blM2R0Z3R2cxYURvMXNaTXFSY3VCeU1zRE9weFpDYjBwZk9fQm";
     const _part3 = "1CWi02QWotb1FfX2xFRHRla0ZGZl9uT055VGIvZXhlYw";
     const API_URL = atob(_part1 + _part2 + _part3);
     
-    // Función universal para validar contraseñas por rol
-    // Variable nueva para persistir el usuario de la sesión
     let usuarioActivo = "Sistema"; 
     
-    function validarAcceso(permisoRequerido) {
-        const pass = prompt("Ingresa tu contraseña de acceso:");
-        if (!pass) return false;
+    async function validarAcceso(permisoRequerido, mensajeCustom) {
+        const pass = await solicitarPassword(mensajeCustom || "Ingresa tu contraseña de acceso:");
+        if (pass === null) return false; 
+        if (!pass) { alert("❌ Contraseña incorrecta o vacía."); return false; }
     
         const usuario = rolesGlobal.find(r => r.password === pass);
         if (!usuario) {
@@ -754,7 +890,7 @@
             const contenedorFecha = document.getElementById('fecha-ultima-auditoria-global');
             if (contenedorFecha && detalleAuditoriaGlobal.length > 0) {
                 const fechasValidas = detalleAuditoriaGlobal
-                    .map(d => new Date(d.gfechaAud))
+                    .map(d => new Date(d.fechaAud)) 
                     .filter(d => !isNaN(d));
                     
                 if (fechasValidas.length > 0) {
@@ -816,22 +952,28 @@
         document.getElementById('vista-auditoria').style.display = vista === 'auditoria' ? 'block' : 'none';
         document.getElementById('vista-detalle-auditoria').style.display = vista === 'detalle-auditoria' ? 'block' : 'none';
         
-        document.getElementById('tab-visor').classList.toggle('active', vista === 'visor');
-        document.getElementById('tab-pedidos').classList.toggle('active', vista === 'pedidos');
-        document.getElementById('tab-auditoria').classList.toggle('active', vista === 'auditoria');
-        document.getElementById('tab-detalle-auditoria').classList.toggle('active', vista === 'detalle-auditoria');
+        // Limpiar activaciones del menú
+        document.querySelectorAll('.sidebar-nav-item, .sidebar-subnav-item').forEach(el => el.classList.remove('active'));
+        
+        // Activar el correspondiente
+        const tabEl = document.getElementById('tab-' + vista);
+        if (tabEl) tabEl.classList.add('active');
+        
+        if (window.innerWidth <= 768) {
+            document.getElementById("sidebar-wrapper").classList.add("toggled");
+        }
     }
 
-    function abrirModuloAuditorias() {
-        if (validarAcceso("AUDITORIA")) {
-            document.getElementById('tab-auditoria').style.display = 'inline-block';
+    async function abrirModuloAuditorias() {
+        if (await validarAcceso("AUDITORIA", "Ingresa tu contraseña para Auditoría:")) {
+            document.getElementById('tab-auditoria').style.display = 'block';
             cambiarVista('auditoria');
         }
     }
     
     async function abrirDetalleAuditoria() {
-        if (validarAcceso("ESTADISTICA")) {
-            document.getElementById('tab-detalle-auditoria').style.display = 'inline-block';
+        if (await validarAcceso("ESTADISTICA", "Ingresa contraseña para Detalle Auditoría:")) {
+            document.getElementById('tab-detalle-auditoria').style.display = 'block';
             cambiarVista('detalle-auditoria');
             
             if (detalleAuditoriaGlobal.length === 0) {
@@ -841,9 +983,9 @@
         }
     }
     
-    function abrirModuloPedidos() {
-        const pass = prompt("Ingresa tu contraseña de acceso para Pedidos:");
-        if (!pass) return;
+    async function abrirModuloPedidos() {
+        const pass = await solicitarPassword("Ingresa tu contraseña de acceso para Pedidos:");
+        if (pass === null) return; // Se cerró el modal
         
         const usuario = rolesGlobal.find(r => r.password === pass);
         if (!usuario) {
@@ -853,7 +995,7 @@
         
         if (usuario.permisos.includes("TODO") || usuario.permisos.includes("VENTAS") || usuario.permisos.includes("ESTADISTICA")) {
             usuarioActivo = usuario.rol; 
-            document.getElementById('tab-pedidos').style.display = 'inline-block';
+            document.getElementById('tab-pedidos').style.display = 'block';
             cambiarVista('pedidos');
         } else {
             alert("⛔ Acceso denegado. Se requiere cuenta de VENTAS o ESTADÍSTICA.");
@@ -1382,7 +1524,6 @@
         actualizarTotalesPedido();
     }
 
-    // --- NUEVO: FUNCIÓN PARA LIMPIAR Y REINICIAR LA TABLA DE PEDIDOS ---
     function limpiarTablaPedidos() {
         const filas = document.querySelectorAll('#body-pedidos tr');
         filas.forEach(f => {
@@ -1402,7 +1543,6 @@
             f.style.display = ''; 
         });
         
-        // Resetear los filtros visuales del área de captura
         document.getElementById('filtro-tabla-pedidos').value = "";
         document.getElementById('chk-con-folio').checked = false;
         document.getElementById('filtro-fecha-captura').value = "";
@@ -1471,7 +1611,6 @@
         const texto = normalizarTexto(document.getElementById('filtro-tabla-pedidos').value);
         const soloConFolio = document.getElementById('chk-con-folio').checked; 
         
-        // NUEVO: Leer el valor del mini calendario (Formato YYYY-MM-DD)
         const fechaFiltro = document.getElementById('filtro-fecha-captura').value; 
         const filas = document.querySelectorAll('#body-pedidos tr');
         
@@ -1490,25 +1629,21 @@
                 cumpleFolio = tieneImporte || tieneFolio;
             }
 
-            // NUEVO: Validación de Fecha
             let cumpleFecha = true;
             if (fechaFiltro) {
                 const fechaFila = f.dataset.fechaCaptura || "";
-                // Comparamos si la fecha de la fila incluye la fecha del filtro (ignorando la hora)
-                // Ahora ambos están en formato YYYY-MM-DD
                 if (!fechaFila.includes(fechaFiltro)) {
                     cumpleFecha = false;
                 }
             }
 
-            // Ocultamos o mostramos según si cumple todas las condiciones
             f.style.display = (cumpleTexto && cumpleFolio && cumpleFecha) ? '' : 'none';
         });
         actualizarTotalesPedido();
     }
     
-    function descargarExcelPedidos() {
-        if (!validarAcceso("EXCEL")) return;
+    async function descargarExcelPedidos() {
+        if (!await validarAcceso("EXCEL", "Ingresa contraseña para Excel de Pedidos:")) return;
         const semana = document.getElementById('input-semana-pedido').value;
         if (!semana) { alert("⚠️ Selecciona una semana válida arriba."); return; }
 
@@ -1548,7 +1683,7 @@
 
         const ws = XLSX.utils.json_to_sheet(dataExcel);
         const wb = XLSX.utils.book_new(); 
-        XLS.utils.book_append_sheet(wb, ws, "Pedidos");
+        XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
         XLSX.writeFile(wb, `Pedidos_${semana}.xlsx`);
     }
     
@@ -1582,7 +1717,7 @@
                     importe: importe,
                     descuento: parseFloat(inputs[2].dataset.valor) || 0,
                     folio: folio,
-                    diaPedido: f.dataset.dia, // Enviamos el día al servidor
+                    diaPedido: f.dataset.dia,
                     _filaElement: f 
                 });
             }
@@ -1622,29 +1757,21 @@
         }
     }
 
-    // --- SEGMENTO ACTUALIZADO: CONSULTA Y RELLENADO DE HISTÓRICO ---
-
     async function consultarPedidosSemana() {
         const semana = document.getElementById('input-semana-pedido').value;
         if(!semana) return;
 
-        // Mostrar estado de carga en el UI
         const statusEl = document.getElementById('mensaje-estado');
         statusEl.innerHTML = '<i data-lucide="loader" class="spin"></i> Buscando histórico...';
         lucide.createIcons();
 
         try {
-            // Se realiza la petición incluyendo la acción y la semana seleccionada
             const response = await fetch(API_URL + "?accion=GET_PEDIDOS_SEMANA&semana=" + semana);
             const data = await response.json();
             
             if(data.pedidos && data.pedidos.length > 0) {
-                // 1. Llenamos la tabla con los datos del servidor
                 rellenarTablaConHistorico(data.pedidos);
-                
-                // 2. NUEVO: Forzamos el filtro visual por si hay una fecha o texto ya escrito
                 filtrarPedidosVisual();
-
                 statusEl.innerHTML = '<i data-lucide="check-circle" style="color:#10b981;"></i> Histórico cargado';
                 alert("✅ Se cargó el histórico de la " + semana);
             } else {
@@ -1662,7 +1789,6 @@
     }
 
     function rellenarTablaConHistorico(historico) {
-        // Limpiamos los inputs antes de inyectar los datos nuevos
         limpiarTablaPedidos(); 
         
         const filas = document.querySelectorAll('#body-pedidos tr');
@@ -1670,50 +1796,40 @@
             const claveSimi = f.dataset.clavesimi; 
             if(!claveSimi) return;
 
-            // Buscamos si existe un registro para esta sucursal en el array que devolvió el AppScript
             const pedido = historico.find(p => p.claveSimi == claveSimi); 
             
             if (pedido) {
                 const inputs = f.querySelectorAll('.input-capture');
                 
-                // 1. Asignación de Tipo de Pedido
                 const tipo = pedido.tipoPedido || "NORMAL";
                 inputs[0].value = tipo;
                 
-                // 2. Asignación de Importe con formato moneda
                 const importe = pedido.importe || 0;
                 if(importe > 0) {
                     inputs[1].value = "$ " + importe.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    calcularDescuento(inputs[1]); // Disparamos el cálculo automático del -35%
+                    calcularDescuento(inputs[1]); 
                 } else {
                     inputs[1].value = "";
                 }
                 
-                // 3. Asignación de Folio
                 const folio = pedido.folio || "";
                 inputs[4].value = folio; 
 
-                // 4. Guardamos valores originales para control de cambios
                 f.dataset.origTipo = tipo;
                 f.dataset.origImporte = importe;
                 f.dataset.origFolio = folio;
 
-                // --- ACTUALIZACIÓN CRÍTICA PARA EL FILTRO ---
-                // Convertimos "DD/MM/YYYY HH:mm:ss" a "YYYY-MM-DD" para compatibilidad con el input date
                 let fechaParaFiltro = "";
                 if (pedido.horaSistema) {
-                    const soloFecha = pedido.horaSistema.split(' ')[0]; // Extrae "14/04/2026"
-                    const partes = soloFecha.split('/'); // ["14", "04", "2026"]
+                    const soloFecha = pedido.horaSistema.split(' ')[0]; 
+                    const partes = soloFecha.split('/'); 
                     if (partes.length === 3) {
-                        // Reorganiza a "2026-04-14"
                         fechaParaFiltro = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
                     }
                 }
                 f.dataset.fechaCaptura = fechaParaFiltro; 
-                // --------------------------------------------
 
             } else {
-                // Si no hay pedido, reseteamos el dataset de la fila
                 f.dataset.origTipo = "NORMAL";
                 f.dataset.origImporte = "0";
                 f.dataset.origFolio = "";
@@ -1721,11 +1837,9 @@
             }
         });
         
-        // Actualizamos los sumatorios de la parte superior del dashboard
         actualizarTotalesPedido();
     }
     
-    // ----------------------------------------
     function abrirHistorial() {
         const tbody = document.getElementById('tbody-historial');
         document.getElementById('chk-all').checked = false; 
@@ -1740,7 +1854,7 @@
                 <td style="text-align:center;">
                     <input type="checkbox" class="check-mov" value='${JSON.stringify({idRow: h.idRow, sucursal: nombreSuc, accion: h.accion, empleado: h.empleado, detalle: h.detalle})}' ${yaInformado ? 'disabled' : ''}>
                 </td>
-                <td style="font-size:10px; color:var(--text-muted);">${formatDate(h.fecha)}</td>
+                <td style="font-size:14px; color:var(--text-muted);">${formatDate(h.fecha)}</td>
                 <td><strong>${nombreSuc}</strong></td>
                 <td><span class="${claseTag}">${h.accion}</span></td>
                 <td>${h.empleado}</td><td style="font-size:11px;">${h.detalle}</td>
@@ -1816,7 +1930,9 @@
         renderizarTablaPedidos(filtradas);
     }
 
-    function solicitarCargaCSV() { if (validarAcceso("VENTAS")) document.getElementById('csv-file-input').click(); }
+    async function solicitarCargaCSV() { 
+        if (await validarAcceso("VENTAS", "Ingresa contraseña para Subir Ventas:")) document.getElementById('csv-file-input').click(); 
+    }
 
     function procesarCSV(event) {
         const file = event.target.files[0];
@@ -1940,7 +2056,7 @@
         }
     }
 
-    function solicitarEdicion() { if (validarAcceso("EDICION")) toggleModoEdicion(true); }
+    async function solicitarEdicion() { if (await validarAcceso("EDICION", "Ingresa contraseña de Edición:")) toggleModoEdicion(true); }
 
     function toggleModoEdicion(activar) {
         document.getElementById('btn-editar-modal').style.display = activar ? 'none' : 'inline-flex';
@@ -2073,37 +2189,29 @@
     }
     
     function actualizarDataLists() {
-    document.getElementById('lista-supervisores-auto').innerHTML = [...new Set(sucursales.map(x => x.supervisor))].sort().map(x => `<option value="${x}">`).join('');
-    
-    document.getElementById('lista-puestos-auto').innerHTML = [...new Set(plantillaGlobal.map(x => x.puesto))].sort().map(x => `<option value="${x}">`).join('');
-    
-    // --- SEGMENTO MODIFICADO PARA IDENTIFICAR PERSONAL DISPONIBLE ---
-    document.getElementById('lista-empleados-auto').innerHTML = plantillaGlobal.map(x => {
-        const suc = sucursales.find(s => s.claveSimi === x.claveSucursal);
+        document.getElementById('lista-supervisores-auto').innerHTML = [...new Set(sucursales.map(x => x.supervisor))].sort().map(x => `<option value="${x}">`).join('');
+        document.getElementById('lista-puestos-auto').innerHTML = [...new Set(plantillaGlobal.map(x => x.puesto))].sort().map(x => `<option value="${x}">`).join('');
         
-        let textoContexto = "";
-        // Si no tiene clave de sucursal o viene en blanco, está disponible
-        if (!x.claveSucursal || x.claveSucursal.trim() === "") {
-            textoContexto = "🟢 DISPONIBLE (Sin Unidad)";
-        } 
-        // Si tiene clave y encontramos la sucursal
-        else if (suc) {
-            textoContexto = `Esta en la unidad de: ${suc.nombre}`;
-        } 
-        // Si tiene una clave pero por alguna razón no está en el visor actual
-        else {
-            textoContexto = `Asignado a clave FR/Simi: ${x.claveSucursal}`;
-        }
+        document.getElementById('lista-empleados-auto').innerHTML = plantillaGlobal.map(x => {
+            const suc = sucursales.find(s => s.claveSimi === x.claveSucursal);
+            let textoContexto = "";
+            if (!x.claveSucursal || x.claveSucursal.trim() === "") {
+                textoContexto = "🟢 DISPONIBLE (Sin Unidad)";
+            } 
+            else if (suc) {
+                textoContexto = `Esta en la unidad de: ${suc.nombre}`;
+            } 
+            else {
+                textoContexto = `Asignado a clave FR/Simi: ${x.claveSucursal}`;
+            }
+            return `<option value="${x.noEmpleado} - ${x.nombre}">${textoContexto}</option>`;
+        }).sort().join('');
         
-        return `<option value="${x.noEmpleado} - ${x.nombre}">${textoContexto}</option>`;
-    }).sort().join('');
-    // ----------------------------------------------------------------
+        document.getElementById('lista-auditores-auto').innerHTML = auditoresGlobal.sort().map(x => `<option value="${x}">`).join('');
+    }
 
-    document.getElementById('lista-auditores-auto').innerHTML = auditoresGlobal.sort().map(x => `<option value="${x}">`).join('');
-}
-
-    function descargarExcelPlantilla() {
-        if (!validarAcceso("EXCEL")) return;
+    async function descargarExcelPlantilla() {
+        if (!await validarAcceso("EXCEL", "Ingresa contraseña para Excel de Plantilla:")) return;
         const ws = XLSX.utils.json_to_sheet(plantillaGlobal.map(emp => {
             const suc = sucursales.find(s => s.claveSimi === emp.claveSucursal);
             return { "Sucursal": suc ? suc.nombre : emp.claveSucursal, "Clave Fr": suc ? suc.claveFr : "", "Clave Simi": emp.claveSucursal, "No Emp": emp.noEmpleado, "Nombre": emp.nombre, "Puesto": emp.puesto, "Tel": emp.telefono };
@@ -2127,13 +2235,13 @@
     }
     
     function cancelarEdicion() { abrirModal(sucursalActualId); }
-    window.onclick = e => { if (e.target.classList.contains('modal')) cerrarModal(e.target.id); }
+    window.onclick = e => { if (e.target.classList.contains('modal-custom')) cerrarModal(e.target.id); }
     
-    function mostrarSpos(e, claveSimi, btnElement) {
+    async function mostrarSpos(e, claveSimi, btnElement) {
         if(e) e.stopPropagation(); 
         
         if (!sesionEstadisticaActiva) {
-            if (validarAcceso("ESTADISTICA")) {
+            if (await validarAcceso("ESTADISTICA", "Contraseña para Ver SPOS:")) {
                 sesionEstadisticaActiva = true; 
             } else {
                 return; 
@@ -2346,7 +2454,7 @@
         if (e) e.stopPropagation();
         
         if (!sesionEstadisticaActiva) {
-            if (!validarAcceso("ESTADISTICA")) return;
+            if (!await validarAcceso("ESTADISTICA", "Contraseña para Editar SPOS:")) return;
             sesionEstadisticaActiva = true;
         }
 
@@ -2386,28 +2494,24 @@
         lucide.createIcons();
     }
 
-    function abrirModalNuevaSucursal() {
-        if (validarAcceso("ESTADISTICA")) {
+    async function abrirModalNuevaSucursal() {
+        if (await validarAcceso("ESTADISTICA", "Ingresa contraseña para Nueva Sucursal:")) {
             document.getElementById('modal-nueva-sucursal').style.display = 'flex';
             lucide.createIcons();
         }
     }
     
-    // --- NUEVA FUNCIÓN AGREGADA PARA TOMAR LA CAPTURA ---
-    // --- FUNCIÓN ACTUALIZADA PARA CAPTURAR TODO EL SCROLL ---
     function tomarCapturaPedidos() {
         const area = document.getElementById('area-captura-pedidos');
-        const tableContainer = area.querySelector('.table-container'); // NUEVO: Seleccionar el div del scroll
+        const tableContainer = area.querySelector('.table-container'); 
         if(!area || !tableContainer) return;
 
-        // Asegurar que se cumpla la regla forzando el check y el filtro antes de capturar
         const chk = document.getElementById('chk-con-folio');
         if (!chk.checked) {
             chk.checked = true;
             filtrarPedidosVisual();
         }
 
-        // Fijar valores de inputs para html2canvas
         const inputs = area.querySelectorAll('input, select');
         inputs.forEach(input => {
             if(input.tagName === 'SELECT') {
@@ -2425,11 +2529,9 @@
         document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="loader" class="spin"></i> Generando captura completa...';
         lucide.createIcons();
 
-        // NUEVO: 1. Guardar estilos originales del contenedor para no estropearlo
         const originalMaxHeight = tableContainer.style.maxHeight;
         const originalOverflow = tableContainer.style.overflow;
         
-        // NUEVO: 2. Expandir el contenedor a su máximo tamaño para que html2canvas vea todo
         tableContainer.style.maxHeight = 'none';
         tableContainer.style.overflow = 'visible';
 
@@ -2441,7 +2543,6 @@
                 windowWidth: area.scrollWidth,
                 windowHeight: area.scrollHeight
             }).then(canvas => {
-                // NUEVO: 3. Restaurar los estilos a la normalidad en cuanto termine la foto
                 tableContainer.style.maxHeight = originalMaxHeight;
                 tableContainer.style.overflow = originalOverflow;
 
@@ -2454,7 +2555,6 @@
                 lucide.createIcons();
                 setTimeout(() => { document.getElementById('mensaje-estado').innerHTML = oldText; }, 3000);
             }).catch(err => {
-                // Restaurar estilos en caso de error
                 tableContainer.style.maxHeight = originalMaxHeight;
                 tableContainer.style.overflow = originalOverflow;
                 
