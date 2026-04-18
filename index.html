@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v11.4.4 Relase</title>
+    <title>Visor Pro v11.4.5</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -249,7 +249,7 @@
     <div id="sidebar-wrapper" class="d-flex flex-column">
         <div class="sidebar-heading text-light">
             <i data-lucide="layers"></i> 
-            <div>Visor Pro <span class="badge bg-primary fs-6 ms-1">v11.4.3</span></div>
+            <div>Visor Pro <span class="badge bg-primary fs-6 ms-1">v11.4.5</span></div>
         </div>
         <div class="list-group list-group-flush flex-grow-1 mt-2">
             <a class="sidebar-nav-item active" id="tab-visor" onclick="cambiarVista('visor')">
@@ -613,9 +613,28 @@
         <div class="modal-grid">
             <div>
                 <div class="stats-cards-container">
-                    <div style="flex:1; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: flex; align-items: center; gap: 4px;"><i data-lucide="user-check" style="width: 14px; height: 14px;"></i> SUPERVISOR</span>
-                        <div id="container-supervisor" style="margin-top:4px; font-weight: bold; font-size: 14px;"></div>
+                    <div style="flex:1; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <i data-lucide="user-check" style="width: 14px; height: 14px;"></i> SUPERVISOR:
+                            </span>
+                            <div id="container-supervisor" style="font-weight: bold; font-size: 14px; color: var(--primary);"></div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px;">
+                            <div>
+                                <span style="font-size: 9px; color: #64748b; font-weight: bold; display: block; text-transform: uppercase;">Contabilidad</span>
+                                <div id="val-contabilidad" style="font-size: 12px; font-weight: 600; color: #1e293b;"></div>
+                            </div>
+                            <div>
+                                <span style="font-size: 9px; color: #64748b; font-weight: bold; display: block; text-transform: uppercase;">Coordinación</span>
+                                <div id="val-coordinacion" style="font-size: 12px; font-weight: 600; color: #1e293b;"></div>
+                            </div>
+                            <div>
+                                <span style="font-size: 9px; color: #64748b; font-weight: bold; display: block; text-transform: uppercase;">Recursos Humanos</span>
+                                <div id="val-rh" style="font-size: 12px; font-weight: 600; color: #1e293b;"></div>
+                            </div>
+                        </div>
                     </div>
                     <div style="background: #ffffff; padding: 12px; border-radius: 6px; text-align: center; min-width: 90px; border: 1px solid var(--border);">
                         <div style="font-size: 10px; color: var(--text-muted); font-weight: bold;">P. ÓPTIMA</div>
@@ -957,7 +976,11 @@
                 nombre: col[3] || '', telefono: col[6] || '', vtaMensual: parseFloat(col[7]) || 0, 
                 supervisor: col[8] || '', diaPedido: col[9] || '', entrega: col[11] || '', 
                 estadistica: col[12] || '', correo: col[13] || '', p_optima: parseInt(col[14]) || 0,
-                spos: col[15]?.toString().trim() || ''
+                spos: col[15]?.toString().trim() || '',
+                cajachica: col[17] || '',  // Columna R
+                contabilidad: col[18] || '',  // Columna S
+                coordinacion: col[21] || '',  // Columna V
+                rh: col[22] || ''
             })).filter(s => s.nombre);
             
             sucursales.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -2440,6 +2463,9 @@
         if (!s) return;
         const emps = plantillaGlobal.filter(p => p.claveSucursal === s.claveSimi);
         document.getElementById('container-supervisor').innerHTML = `<span id="text-supervisor">${s.supervisor}</span>`;
+        document.getElementById('val-contabilidad').innerText = s.contabilidad || 'N/D';
+        document.getElementById('val-coordinacion').innerText = s.coordinacion || 'N/D';
+        document.getElementById('val-rh').innerText = s.rh || 'N/D';
         document.getElementById('val-p-optima').innerText = s.p_optima;
         document.getElementById('val-p-autorizada').innerText = emps.length;
         document.getElementById('modal-titulo').innerHTML = `<i data-lucide="store"></i> ${s.claveFr} - ${s.claveSimi} | ${s.nombre} <span style="font-size: 16px; margin-left: 16px; color: var(--text-muted);"><i data-lucide="phone" style="width: 16px; height: 16px; margin-right: 16px; vertical-align: middle;"></i>${s.telefono || 'Sin teléfono'}</span>`;
@@ -3146,9 +3172,9 @@
             thHtml += `<th style="padding: 8px; border-bottom: 1px solid #cbd5e1; ${bg}">${dia.toUpperCase()}</th>`;
         });
         thead.innerHTML = thHtml;
-
         // 2. Construir Cuerpo (Tbody) marcando el turno presente/futuro de Verde Pastel
         const currentTimeStr = hoy.getHours().toString().padStart(2, '0') + ":" + hoy.getMinutes().toString().padStart(2, '0');
+
 
         tbody.innerHTML = horariosUnidad.map(emp => {
             let trHtml = `<tr><td style="text-align: left; padding: 8px; border-bottom: 1px solid #f1f5f9;"><b>${emp.empleado}</b><br><small class="text-muted">${emp.puesto || ''}</small></td>`;
