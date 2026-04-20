@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Auditorías 2.4.1 -beta</title>
+    <title>Calendario Auditorías 2.5.0 -beta</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Ajuste responsivo universal para evitar desbordamientos por padding */
@@ -81,7 +81,7 @@
 
 <div class="top-menu">
     <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.4.1 -beta</h1>
+        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.5.0 -beta</h1>
         <div id="user-display" class="user-info" style="display: none;"></div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -203,6 +203,7 @@
             document.getElementById('pass-input').value = "";
         }
     }
+
     /**
      * Convierte la hora de Google Sheets (ISO o Texto) al formato 12h legible.
      * @param {any} horaRaw - Valor proveniente de la columna 'hora'
@@ -241,25 +242,56 @@
                 ${h12}:${mStr} ${ampm}
             </div>`;
     }
+
     function renderizarCalendario() {
         const mesVal = document.getElementById('filtro-mes').value;
         if (!mesVal || !usuarioActivo) return;
         
         const [year, month] = mesVal.split('-').map(Number);
         
-        // Fecha Local Real
+        // Fecha Local Real para identificar "hoy" visualmente
         const now = new Date();
         const hoyISO = now.getFullYear() + '-' + 
                        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
                        String(now.getDate()).padStart(2, '0');
 
+        // --- CÁLCULO DE VENTANA DE VISIBILIDAD ---
+        // Normalizamos "hoy" a la medianoche para evitar temas de horas
+        const hoyMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dayOfWeek = hoyMidnight.getDay(); // 0 = Domingo, 1 = Lunes...
+        
+        // Días restantes hasta el domingo de esta semana
+        const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+        
+        let maxVisibleDate = new Date(hoyMidnight);
+        maxVisibleDate.setDate(hoyMidnight.getDate() + daysToSunday);
+        
+        // Si hoy es domingo (0), el auditor puede ver la programación de la semana siguiente (+7 días)
+        if (dayOfWeek === 0) {
+            maxVisibleDate.setDate(maxVisibleDate.getDate() + 7);
+        }
+        
+        const maxVisibleTime = maxVisibleDate.getTime();
+        // -----------------------------------------
+
         const auditoriasDelMes = auditoriasGlobal.filter(a => {
             if (a.estado !== "Programada" || !a.fechaProg) return false;
+            
             const d = new Date(a.fechaProg);
             const perteneceAlMes = (d.getUTCFullYear() === year && (d.getUTCMonth() + 1) === month);
             if (!perteneceAlMes) return false;
 
+            // Administrador ve todo el mes siempre
             if (usuarioActivo.permisos.includes("ADMIN")) return true;
+
+            // --- APLICAR REGLA DE VISIBILIDAD ---
+            // Tomamos la fecha de la auditoría y la pasamos a la medianoche local para comparar justo
+            const auditTime = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).getTime();
+            
+            if (auditTime > maxVisibleTime) {
+                return false; // Ocultamos auditorías que están más allá de la ventana permitida
+            }
+            // ------------------------------------
             
             // Evaluar si es auditor titular
             const idEnAuditoria = a.auditor ? a.auditor.split('-')[0].trim() : "";
@@ -270,6 +302,7 @@
             
             return esTitular || esApoyo;
         });
+
         // Contador de autorias realizadas
         // --- INICIO NUEVO BLOQUE: CONTADOR DE AUDITORÍAS ---
         let conteoProgramadas = 0;
