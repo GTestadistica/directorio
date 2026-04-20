@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v11.4.5 Relase</title>
+    <title>Visor Pro v11.5.0 Relase</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -192,7 +192,25 @@
         #tabla-pedidos-captura { table-layout: fixed; width: 100%; border-collapse: collapse; }
         #tabla-pedidos-captura th, #tabla-pedidos-captura td { padding: 4px !important; font-size: 11px !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
         #tabla-pedidos-captura .input-capture { padding: 2px 6px !important; font-size: 11px !important; height: 26px; width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 3px; }
-
+        
+        /* --- Multi-select personalizado para Auditores de Apoyo --- */
+        .dropdown-check-list { display: inline-block; width: 100%; position: relative; }
+        .dropdown-check-list .anchor {
+            width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px;
+            background-color: #f8fafc; font-size: 13px; cursor: pointer; display: inline-block;
+            box-sizing: border-box; color: var(--text-dark); user-select: none;
+        }
+        .dropdown-check-list .anchor::after { content: "▼"; float: right; font-size: 10px; margin-top: 3px; color: var(--text-muted); }
+        .dropdown-check-list .items {
+            padding: 8px; display: none; margin: 0; border: 1px solid var(--border);
+            border-top: none; position: absolute; background: #fff; width: 100%; z-index: 100;
+            max-height: 180px; overflow-y: auto; border-radius: 0 0 6px 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .dropdown-check-list.visible .items { display: block; }
+        .dropdown-check-list .items li { list-style: none; margin-bottom: 6px; font-size: 12px; }
+        .dropdown-check-list .items label { display: flex; align-items: center; gap: 8px; cursor: pointer; margin:0;}
+        .dropdown-check-list .items input { accent-color: var(--primary); transform: scale(1.1); margin: 0; }
+        
         /* Helpers y Responsive */
         .grid-responsive-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .totales-container { display: flex; gap: 20px; text-align: right; margin-left: auto; }
@@ -249,7 +267,7 @@
     <div id="sidebar-wrapper" class="d-flex flex-column">
         <div class="sidebar-heading text-light">
             <i data-lucide="layers"></i> 
-            <div>Visor Pro <span class="badge bg-primary fs-6 ms-1">v11.4.3</span></div>
+            <div>Visor Pro <span class="badge bg-primary fs-6 ms-1">v11.5.0</span></div>
         </div>
         <div class="list-group list-group-flush flex-grow-1 mt-2">
             <a class="sidebar-nav-item active" id="tab-visor" onclick="cambiarVista('visor')">
@@ -446,9 +464,10 @@
                     <button id="btn-sync-lote" class="menu-btn btn-dark" style="display:none; background-color: #10b981; border-color: #059669; margin-left: 10px;" onclick="sincronizarLoteAuditorias()">
                         <i data-lucide="cloud-upload"></i> Subir Cambios 
                         <span id="badge-lote" style="background: white; color: #059669; padding: 2px 6px; border-radius: 99px; font-size: 11px; font-weight: bold; margin-left: 5px;">0</span>
-                    </button>
+                    </button>               
                 </div>
-
+                <div id="barra-estadisticas-auditoria" style="display: flex; justify-content: flex-end; margin-bottom: 15px; background: #f8fafc; padding: 6px 15px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; color: var(--text-dark);">
+                </div>
                 <div class="audit-grid">
                     <div class="panel-audit">
                         <h3><span><i data-lucide="calendar-clock"></i> Programadas Activas</span></h3>
@@ -505,7 +524,11 @@
                                 </div>
                                 <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                                     <label>Auditor(es) de Apoyo:</label>
-                                    <input type="text" id="input-apoyo" class="edit-combo" list="lista-auditores-auto" placeholder="Seleccionar de la lista (Opcional)">
+                                    <div id="dropdown-apoyo" class="dropdown-check-list">
+                                        <span class="anchor" onclick="document.getElementById('dropdown-apoyo').classList.toggle('visible')">Seleccionar de la lista...</span>
+                                        <ul class="items" id="lista-checks-apoyo">
+                                            </ul>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -522,7 +545,24 @@
                                     <input type="checkbox" id="chk-pernocta" style="accent-color: var(--primary); transform: scale(1.2);"> Pernocta
                                 </div>
                             </div>
-
+                            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px;">
+                                    <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 130px;">
+                                        <label>Tipo:</label>
+                                        <select id="input-tipo-auditoria" class="edit-combo">
+                                            <option value="ORDINARIA" selected>ORDINARIA</option>
+                                            <option value="EXTRAORDINARIA">EXTRAORDINARIA</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1; margin-bottom:0; min-width: 130px;">
+                                        <label>Motivo:</label>
+                                        <select id="input-motivo-auditoria" class="edit-combo">
+                                            <option value="NORMAL" selected>NORMAL</option>
+                                            <option value="SEGUIMIENTO">SEGUIMIENTO</option>
+                                            <option value="ENTREGA">ENTREGA</option>
+                                            <option value="SINIESTRO">SINIESTRO</option>
+                                        </select>
+                                    </div>
+                            </div>    
                             <div style="text-align: right; margin-top: 15px;">
                                 <button class="menu-btn btn-dark" style="display: inline-flex;" onclick="guardarAuditoria()"><i data-lucide="thumbs-up"></i> Programar</button>
                             </div>
@@ -1049,7 +1089,8 @@
                     idRow: idx + 2,
                     fechaRegistro: col[0], claveSimi: col[1]?.toString().trim(), sucursal: col[2], 
                     fechaProg: col[3], auditor: col[4], pernocta: col[5], estado: col[6],
-                    hora: col[7] || '', apoyo: col[8] || ''
+                    hora: col[7] || '', apoyo: col[8] || '',tipo: col[12] || 'ORDINARIA', 
+                    motivo: col[13] || 'NORMAL'
                 }));
 
                 const auditoresSet = new Set();
@@ -1625,6 +1666,10 @@
             <tr class="fila-clickable" style="background-color: #fdf4ff; color: #c026d3; border-left: 4px solid #c026d3;" onclick="seleccionarUnidadAuditoria('PERM', this)">
                 <td style="display:flex; align-items:center;"><i data-lucide="user-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR PERMISO</td>
                 <td>-</td>
+            </tr>
+            <tr class="fila-clickable" style="background-color: #eff6ff; color: #2563eb; border-left: 4px solid #2563eb;" onclick="seleccionarUnidadAuditoria('OFIC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="building" style="width: 14px; height: 14px; margin-right: 6px;"></i> OFICINAS CENTRALES</td>
+                <td>-</td>
             </tr>`;
         }
 
@@ -1644,7 +1689,8 @@
         if (contadoresDiv) {
             const conteoPorAuditor = {};
             programadas.forEach(a => {
-                if (['DESC', 'VAC', 'PERM'].includes(a.claveSimi) || ['DESCANSO', 'VACACIONES', 'PERMISO'].includes(a.sucursal)) return; 
+                // ACTUALIZAR ESTA LÍNEA añadiendo 'OFIC' y 'OFICINAS CENTRALES':
+                if (['DESC', 'VAC', 'PERM', 'OFIC'].includes(a.claveSimi) || ['DESCANSO', 'VACACIONES', 'PERMISO', 'OFICINAS CENTRALES'].includes(a.sucursal)) return; 
                 const auditor = a.auditor && a.auditor.trim() !== '' ? a.auditor.trim() : 'Sin asignar';
                 conteoPorAuditor[auditor] = (conteoPorAuditor[auditor] || 0) + 1;
             });
@@ -1662,7 +1708,50 @@
                 contadoresDiv.innerHTML = '<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Sin auditores asignados este mes</span>';
             }
         }
+        // --- NUEVO: Cálculo de Estadísticas (Agendadas, Tipo, Motivo) ---
+        let totalAgendadas = 0;
+        let cTipo = { 'ORDINARIA': 0, 'EXTRAORDINARIA': 0 };
+        let cMotivo = { 'NORMAL': 0, 'SEGUIMIENTO': 0, 'ENTREGA': 0, 'SINIESTRO': 0 };
 
+        programadas.forEach(a => {
+            const isSpecial = ['DESC', 'VAC', 'PERM'].includes(a.claveSimi) || ['DESCANSO', 'VACACIONES', 'PERMISO'].includes(a.sucursal);
+            if (!isSpecial) {
+                totalAgendadas++;
+                const t = a.tipo || 'ORDINARIA';
+                const m = a.motivo || 'NORMAL';
+                cTipo[t] = (cTipo[t] || 0) + 1;
+                cMotivo[m] = (cMotivo[m] || 0) + 1;
+            }
+        });
+
+        const barraEstadisticas = document.getElementById('barra-estadisticas-auditoria');
+        if (barraEstadisticas) {
+            barraEstadisticas.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span style="font-weight: bold; color: var(--primary); font-size: 12px; display: flex; align-items: center;">
+                        <i data-lucide="calendar-check" style="width:14px; height:14px; margin-right:4px;"></i> Agendadas: 
+                        <span style="background:var(--primary); color:#fff; padding:2px 6px; border-radius:10px; margin-left:6px;">${totalAgendadas}</span>
+                    </span>
+                    
+                    <div style="border-left: 1px solid var(--border); height: 16px;"></div>
+                    
+                    <span style="display:flex; gap:6px;"><strong style="color:var(--text-muted);">Tipo:</strong> 
+                        <span>ORD: <b>${cTipo['ORDINARIA']}</b></span> | 
+                        <span>EXT: <b>${cTipo['EXTRAORDINARIA']}</b></span>
+                    </span>
+                    
+                    <div style="border-left: 1px solid var(--border); height: 16px;"></div>
+                    
+                    <span style="display:flex; gap:6px;"><strong style="color:var(--text-muted);">Motivo:</strong> 
+                        <span>NOR: <b>${cMotivo['NORMAL']}</b></span> | 
+                        <span>SEG: <b>${cMotivo['SEGUIMIENTO']}</b></span> | 
+                        <span>ENT: <b>${cMotivo['ENTREGA']}</b></span> | 
+                        <span>SIN: <b>${cMotivo['SINIESTRO']}</b></span>
+                    </span>
+                </div>
+            `;
+        }
+        // ----------------------------------------------------------------
         renderizarCalendarioAuditorias();
         lucide.createIcons();
     }
@@ -1703,7 +1792,9 @@
                 const isDescanso = a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO';
                 const isVacaciones = a.claveSimi === 'VAC' || a.sucursal === 'VACACIONES';
                 const isPermiso = a.claveSimi === 'PERM' || a.sucursal === 'PERMISO';
-                const isSpecial = isDescanso || isVacaciones || isPermiso;
+                // NUEVA LÍNEA:
+                const isOficinas = a.claveSimi === 'OFIC' || a.sucursal === 'OFICINAS CENTRALES';
+                const isSpecial = isDescanso || isVacaciones || isPermiso || isOficinas;
                 
                 const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
                 const cls = isPernocta && !isSpecial ? 'audit-event pernocta' : 'audit-event';
@@ -1720,6 +1811,10 @@
                 } else if (isPermiso) {
                     iconHtml = '<i data-lucide="user-check" style="width:10px; height:10px;"></i>';
                     customStyle = 'background-color: #fdf4ff; border-left-color: #f0abfc; color: #a21caf;';
+                } else if (isOficinas) {
+                    // NUEVO ESTILO AZUL PARA OFICINAS:
+                    iconHtml = '<i data-lucide="building" style="width:10px; height:10px;"></i>';
+                    customStyle = 'background-color: #eff6ff; border-left-color: #93c5fd; color: #1d4ed8;';
                 } else if (isPernocta) {
                     iconHtml = '<i data-lucide="moon" style="width:10px; height:10px;"></i>';
                 }
@@ -1748,13 +1843,17 @@
                 const horaHtml = horaStr && !isDescanso ? `<div style="font-size:11px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px; color: #064e3b;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
                 let apoyoNombreCorto = a.apoyo ? a.apoyo.trim().split(' ')[0] : '';
                 const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="opacity: 0.85; margin-top:2px;"><i data-lucide="users" style="width:10px; height:10px;"></i> + ${apoyoNombreCorto}</div>` : '';
-
+                // NUEVO: Texto pequeño con el Tipo y Motivo (ej. [ORDINARIA - NORMAL])
+                const tipoMotivoHtml = !isSpecial ? `<div class="event-subtitle" style="opacity: 0.70; font-size: 8px; margin-top:3px;">[${a.tipo || 'ORD'} - ${a.motivo || 'NOR'}]</div>` : '';             
+                // NUEVO: Atributo title actualizado con Tipo y Motivo
+                const tooltipText = `Unidad: ${a.sucursal}&#10;Hora: ${horaStr || 'No definida'}&#10;Líder: ${a.auditor}&#10;Apoyo: ${a.apoyo || 'Ninguno'}&#10;Estado: ${a.estado}&#10;Tipo: ${a.tipo || 'ORDINARIA'}&#10;Motivo: ${a.motivo || 'NORMAL'}`;
                 return `
-                <div class="${cls}" style="${customStyle}" title="Unidad: ${a.sucursal}&#10;Hora: ${horaStr || 'No definida'}&#10;Líder: ${a.auditor}&#10;Apoyo: ${a.apoyo || 'Ninguno'}&#10;Estado: ${a.estado}" onclick="seleccionarUnidadAuditoria('${a.claveSimi}')">
+                <div class="${cls}" style="${customStyle}" title="${tooltipText}" onclick="seleccionarUnidadAuditoria('${a.claveSimi}')">
                     ${horaHtml}
                     <div class="event-title">${a.sucursal}</div>
                     <div class="event-subtitle">${iconHtml} ${a.auditor || 'Sin asignar'}</div>
                     ${apoyoHtml}
+                    ${tipoMotivoHtml}
                 </div>`;
             }).join('');
 
@@ -1799,6 +1898,14 @@
                 <td>-</td>
             </tr>`;
         }
+        // NUEVO BLOQUE:
+        if ("oficinas".includes(t) || "centrales".includes(t) || t === "") {
+             htmlEspeciales += `
+            <tr class="fila-clickable" style="background-color: #eff6ff; color: #2563eb; border-left: 4px solid #2563eb;" onclick="seleccionarUnidadAuditoria('OFIC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="building" style="width: 14px; height: 14px; margin-right: 6px;"></i> OFICINAS CENTRALES</td>
+                <td>-</td>
+            </tr>`;
+        }
 
         tbodyPend.innerHTML = htmlEspeciales + sucursales.filter(s => s.nombre.toLowerCase().includes(t))
                                         .map(s => generarFilaPendiente(s, mesSeleccionado))
@@ -1830,6 +1937,9 @@
             suc = { claveSimi: 'VAC', nombre: 'VACACIONES' };
         } else if (claveSimi === 'PERM') {
             suc = { claveSimi: 'PERM', nombre: 'PERMISO' };
+        } else if (claveSimi === 'OFIC') {
+            // NUEVA LÍNEA:
+            suc = { claveSimi: 'OFIC', nombre: 'OFICINAS CENTRALES' };
         }
 
         if (!suc) return;
@@ -1878,15 +1988,38 @@
             }
         }
     }
-    
+    // Helpers para el Multi-Select
+    function actualizarTextoApoyo() {
+        const checks = document.querySelectorAll('.chk-apoyo-item:checked');
+        const anchor = document.querySelector('#dropdown-apoyo .anchor');
+        if (checks.length === 0) {
+            anchor.innerText = "Seleccionar de la lista...";
+        } else if (checks.length === 1) {
+            anchor.innerText = checks[0].value;
+        } else {
+            anchor.innerText = `${checks.length} seleccionados`;
+        }
+    }
+
+    // Cerrar el dropdown si el usuario hace click afuera
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('dropdown-apoyo');
+        if (dropdown && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('visible');
+        }
+    });
     function guardarAuditoria() {
         if (!sucursalAuditoriaSeleccionada) { alert("Selecciona una unidad de la lista."); return; }
         
         const auditor = document.getElementById('input-auditor').value;
-        const apoyo = document.getElementById('input-apoyo').value;
+        const checksApoyo = document.querySelectorAll('.chk-apoyo-item:checked');
+        const apoyoArr = Array.from(checksApoyo).map(chk => chk.value);
+        const apoyo = apoyoArr.join(', '); // Los une con coma, ej: "Juan, María"
         const fecha = document.getElementById('input-fecha-auditoria').value;
         const hora = document.getElementById('input-hora-auditoria').value;
         const pernocta = document.getElementById('chk-pernocta').checked;
+        const tipo = document.getElementById('input-tipo-auditoria').value;
+        const motivo = document.getElementById('input-motivo-auditoria').value;
 
         if (!auditor || !fecha) { alert("Llena el auditor principal y la fecha."); return; }
 
@@ -1900,7 +2033,9 @@
             apoyo: apoyo,
             fecha: fecha,
             hora: hora,
-            pernocta: pernocta
+            pernocta: pernocta,
+            tipo: tipo,
+            motivo: motivo
         });
 
         auditoriasGlobal.push({
@@ -1913,14 +2048,20 @@
             pernocta: pernocta,
             estado: "Programada",
             hora: hora,
-            apoyo: apoyo
+            apoyo: apoyo,
+            tipo: tipo,
+            motivo: motivo
         });
 
         document.getElementById('input-auditor').value = "";
-        document.getElementById('input-apoyo').value = "";
+        document.querySelectorAll('.chk-apoyo-item').forEach(chk => chk.checked = false);
+        actualizarTextoApoyo();
+        document.getElementById('dropdown-apoyo').classList.remove('visible');
         document.getElementById('input-fecha-auditoria').value = "";
         document.getElementById('input-hora-auditoria').value = "";
         document.getElementById('chk-pernocta').checked = false;
+        document.getElementById('input-tipo-auditoria').value = "ORDINARIA";
+        document.getElementById('input-motivo-auditoria').value = "NORMAL";
         
         document.getElementById('mensaje-estado').innerHTML = '<i data-lucide="check" style="color:#10b981;"></i> Agregada a la cola';
         actualizarBotonSyncLote();
@@ -2767,6 +2908,19 @@
         }).sort().join('');
         
         document.getElementById('lista-auditores-auto').innerHTML = auditoresGlobal.sort().map(x => `<option value="${x}">`).join('');
+        
+        // --- NUEVO CÓDIGO: Llenar el multi-select de apoyo ---
+        const listaApoyo = document.getElementById('lista-checks-apoyo');
+        if (listaApoyo) {
+            listaApoyo.innerHTML = auditoresGlobal.sort().map(x => `
+                <li>
+                    <label>
+                        <input type="checkbox" class="chk-apoyo-item" value="${x}" onchange="actualizarTextoApoyo()"> 
+                        ${x}
+                    </label>
+                </li>
+            `).join('');
+        }
     }
 
     async function descargarExcelPlantilla() {
