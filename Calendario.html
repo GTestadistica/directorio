@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Auditorías 2.3</title>
+    <title>Calendario Auditorías 2.4 </title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { 
@@ -61,6 +61,7 @@
         .event-time { font-size: 10px; background: rgba(255,255,255,0.6); border-radius: 3px; padding: 2px 5px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 4px; font-weight: bold;}
 
         /* BADGES */
+        .badge-apoyo {background: #fef9c3;color: #854d0e; padding: 2px 6px; border-radius: 4px; font-size: 9px; text-transform: uppercase; font-weight: 800; border: 1px solid #fde047;}
         .auditor-badge { background: #fff; padding: 4px 12px; border-radius: 6px; font-size: 11px; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px; user-select: none; }
         .auditor-badge.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .badge-total { background: #f1f5f9; font-weight: bold; border-style: dashed; }
@@ -74,7 +75,7 @@
 
 <div class="top-menu">
     <div style="display: flex; align-items: center;">
-        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.3 </h1>
+        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.4</h1>
         <div id="user-display" class="user-info" style="display: none;"></div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">
@@ -196,14 +197,51 @@
             document.getElementById('pass-input').value = "";
         }
     }
+    /**
+     * Convierte la hora de Google Sheets (ISO o Texto) al formato 12h legible.
+     * @param {any} horaRaw - Valor proveniente de la columna 'hora'
+     * @returns {string} HTML formateado para el calendario
+     */
+    function formatearHora(horaRaw) {
+        if (!horaRaw) return "";
+        
+        let h, m;
+        let horaStr = horaRaw.toString();
 
+        // Caso A: Formato ISO de Google Sheets (Ej: 1899-12-30T10:00:00.000Z)
+        if (horaStr.includes('T') || horaStr.includes('Z')) {
+            const dateObj = new Date(horaStr);
+            if (isNaN(dateObj)) return "";
+            // .getHours() usa la zona horaria local del navegador (soluciona el desfase)
+            h = dateObj.getHours();
+            m = dateObj.getMinutes();
+        } 
+        // Caso B: Formato de texto simple (Ej: "10:00" o "15:30")
+        else {
+            let match = horaStr.match(/(\d{1,2}):(\d{2})/);
+            if (!match) return "";
+            h = parseInt(match[1], 10);
+            m = parseInt(match[2], 10);
+        }
+
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        const mStr = String(m).padStart(2, '0');
+
+        // Retorna el bloque con estilo y el icono de reloj
+        return `
+            <div class="event-time">
+                <i data-lucide="clock" style="width:10px; height:10px;"></i> 
+                ${h12}:${mStr} ${ampm}
+            </div>`;
+    }
     function renderizarCalendario() {
         const mesVal = document.getElementById('filtro-mes').value;
         if (!mesVal || !usuarioActivo) return;
         
         const [year, month] = mesVal.split('-').map(Number);
         
-        // CORRECCIÓN DÍA ACTUAL: Fecha Local Real
+        // Fecha Local Real
         const now = new Date();
         const hoyISO = now.getFullYear() + '-' + 
                        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -216,9 +254,63 @@
             if (!perteneceAlMes) return false;
 
             if (usuarioActivo.permisos.includes("ADMIN")) return true;
+            
+            // Evaluar si es auditor titular
             const idEnAuditoria = a.auditor ? a.auditor.split('-')[0].trim() : "";
-            return parseInt(idEnAuditoria, 10) === parseInt(usuarioActivo.numEmpleado, 10);
+            const esTitular = parseInt(idEnAuditoria, 10) === parseInt(usuarioActivo.numEmpleado, 10);
+            
+            // Evaluar si es auditor de apoyo
+            const esApoyo = a.apoyo && (a.apoyo.includes(usuarioActivo.numEmpleado) || a.apoyo.toUpperCase().includes(usuarioActivo.nombre.toUpperCase()));
+            
+            return esTitular || esApoyo;
         });
+        // Contador de autorias realizadas
+        // --- INICIO NUEVO BLOQUE: CONTADOR DE AUDITORÍAS ---
+        let conteoProgramadas = 0;
+        let conteoApoyo = 0;
+
+        auditoriasDelMes.forEach(a => {
+            const isDescanso = a.claveSimi === 'DESC' || a.sucursal.toUpperCase().includes('DESCANSO');
+            const isVacaciones = a.claveSimi === 'VAC' || a.sucursal.toUpperCase().includes('VACACIONES');
+            const isPermiso = a.claveSimi === 'PERM' || a.sucursal.toUpperCase().includes('PERMISO');
+            
+            // Excluimos descansos, vacaciones y permisos
+            if (!isDescanso && !isVacaciones && !isPermiso) {
+                
+                // Verificamos si el usuario logueado es el Auditor Titular
+                const idEnAuditoria = a.auditor ? a.auditor.split('-')[0].trim() : "";
+                const esTitular = parseInt(idEnAuditoria, 10) === parseInt(usuarioActivo.numEmpleado, 10);
+                
+                // Verificamos si el usuario logueado es el Auditor de Apoyo
+                const esApoyo = a.apoyo && (a.apoyo.includes(usuarioActivo.numEmpleado) || a.apoyo.toUpperCase().includes(usuarioActivo.nombre.toUpperCase()));
+                
+                // Sumamos al contador correspondiente
+                if (esTitular) {
+                    conteoProgramadas++;
+                } else if (esApoyo) {
+                    conteoApoyo++;
+                }
+            }
+        });
+
+        const resumenDiv = document.getElementById('resumen-auditores');
+        
+        resumenDiv.innerHTML = `
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: #0f172a;">
+                    <i data-lucide="clipboard-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> 
+                    Programadas: 
+                    <span style="background: #0f172a; color: #fff; border-radius: 12px; padding: 2px 8px; margin-left: 8px; font-size: 12px;">${conteoProgramadas}</span>
+                </div>
+                
+                <div style="display: flex; align-items: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: #0f172a;">
+                    <i data-lucide="users" style="width: 14px; height: 14px; margin-right: 6px;"></i> 
+                    Apoyo: 
+                    <span style="background: #0f172a; color: #fff; border-radius: 12px; padding: 2px 8px; margin-left: 8px; font-size: 12px;">${conteoApoyo}</span>
+                </div>
+            </div>
+        `;
+        // --- FIN NUEVO BLOQUE ---
 
         // Inicio en Lunes
         const header = document.querySelector('.calendar-header-row');
@@ -246,33 +338,65 @@
             });
 
             let eventsHtml = auditoriasDelDia.map(a => {
+                // Identificar Eventos Especiales
                 const isDescanso = a.claveSimi === 'DESC' || a.sucursal.toUpperCase().includes('DESCANSO');
+                const isVacaciones = a.claveSimi === 'VAC' || a.sucursal.toUpperCase().includes('VACACIONES');
+                const isPermiso = a.claveSimi === 'PERM' || a.sucursal.toUpperCase().includes('PERMISO');
+                const isSpecial = isDescanso || isVacaciones || isPermiso;
+                
+                let horaDisplay = !isSpecial ? formatearHora(a.hora) : "";
+
                 const isPernocta = a.pernocta === "Sí" || a.pernocta === true || String(a.pernocta).toUpperCase() === "TRUE";
                 
-                let cls = isPernocta && !isDescanso ? 'audit-event pernocta' : 'audit-event';
-                let customStyle = isDescanso ? 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;' : '';
+                let cls = isPernocta && !isSpecial ? 'audit-event pernocta' : 'audit-event';
                 
-                // Formato Hora AM/PM
-                let horaDisplay = "";
-                if (a.hora && !isDescanso) {
-                    let [h, m] = a.hora.toString().split(':');
-                    let hNum = parseInt(h);
-                    let ampm = hNum >= 12 ? 'PM' : 'AM';
-                    hNum = hNum % 12 || 12;
-                    horaDisplay = `<div class="event-time"><i data-lucide="clock" style="width:10px; height:10px;"></i> ${hNum}:${m} ${ampm}</div>`;
+                let customStyle = '';
+                let iconHtml = '<i data-lucide="user" style="width:12px; height:12px;"></i>';
+                
+                if (isDescanso) {
+                    customStyle = 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;';
+                    iconHtml = '<i data-lucide="coffee" style="width:12px; height:12px;"></i>';
+                } else if (isVacaciones) {
+                    customStyle = 'background-color: #f0fdfa; border-left-color: #5eead4; color: #0f766e;';
+                    iconHtml = '<i data-lucide="palmtree" style="width:12px; height:12px;"></i>';
+                } else if (isPermiso) {
+                    customStyle = 'background-color: #fdf4ff; border-left-color: #f0abfc; color: #a21caf;';
+                    iconHtml = '<i data-lucide="user-check" style="width:12px; height:12px;"></i>';
+                }
+                
+                // --- MANEJO DEL AUDITOR DE APOYO ---
+                let apoyoNombreCorto = '';
+                let esRolApoyo = false;
+
+                if (a.apoyo) {
+                    // Extraer solo el primer nombre. Quita el número si existe (Ej: "0298-DAVID MARISCAL" -> "DAVID")
+                    let partesApoyo = a.apoyo.split('-');
+                    let soloNombre = partesApoyo.length > 1 ? partesApoyo[1].trim() : partesApoyo[0].trim();
+                    apoyoNombreCorto = soloNombre.split(' ')[0];
+                    
+                    // Verificar si el usuario actual lo está viendo porque está asignado de apoyo
+                    if (!usuarioActivo.permisos.includes("ADMIN")) {
+                         const idEnAuditoria = a.auditor ? a.auditor.split('-')[0].trim() : "";
+                         const esTitular = parseInt(idEnAuditoria, 10) === parseInt(usuarioActivo.numEmpleado, 10);
+                         if (!esTitular && (a.apoyo.includes(usuarioActivo.numEmpleado) || a.apoyo.toUpperCase().includes(usuarioActivo.nombre.toUpperCase()))) {
+                             esRolApoyo = true;
+                         }
+                    }
                 }
 
-                // Apoyo
-                let apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="color: #0369a1; font-weight: 600; margin-top:2px;">
-                    <i data-lucide="users" style="width:11px; height:11px;"></i> + ${a.apoyo}</div>` : '';
+                // Generar Etiqueta Visual de "[Apoyo]" al lado de la sucursal
+                let etiquetaApoyoBadge = esRolApoyo ? `<span style="background: #eeff06; color: #4338ca; padding: 1px 4px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 4px; border: 1px solid #c7d2fe;">Apoyo</span>` : '';
 
-                const linkAccion = esHoy && !isDescanso ? `onclick="abrirNuevaAuditoria('${a.claveSimi}', '${a.sucursal}')"` : "";
+                let apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="color: #0369a1; font-weight: 600; margin-top:2px;">
+                    <i data-lucide="users" style="width:11px; height:11px;"></i> + ${apoyoNombreCorto}</div>` : '';
+
+                const linkAccion = esHoy && !isSpecial ? `onclick="abrirNuevaAuditoria('${a.claveSimi}', '${a.sucursal}')"` : "";
 
                 return `
                     <div class="${cls}" style="${customStyle} ${linkAccion ? 'cursor:pointer; border: 1px solid #0284c7;' : ''}" ${linkAccion}>
                         ${horaDisplay}
-                        <div class="event-title">${a.sucursal}</div>
-                        <div class="event-subtitle"><i data-lucide="user" style="width:12px; height:12px;"></i> ${a.auditor}</div>
+                        <div class="event-title">${a.sucursal} ${etiquetaApoyoBadge}</div>
+                        <div class="event-subtitle">${iconHtml} ${a.auditor}</div>
                         ${apoyoHtml}
                     </div>`;
             }).join('');
