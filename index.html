@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor Pro v11.4.4 Relase</title>
+    <title>Visor Pro v11.4.5 Relase</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -292,7 +292,7 @@
                 <button class="btn btn-outline-secondary btn-sm" id="menu-toggle" title="Contraer/Expandir Menú" aria-label="Alternar menú">
                     <i data-lucide="menu"></i>
                 </button>
-                <div class="text-muted" style="font-size: 13px;">Directorio Sucursales Genéricos del Trópico v11.4.3</div>
+                <div class="text-muted" style="font-size: 13px;">Directorio Sucursales Genéricos del Trópico v11.4.5</div>
             </div>
             
             <div class="d-flex flex-wrap gap-2 align-items-center" id="menu-botones-global">       
@@ -505,7 +505,7 @@
                                 </div>
                                 <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                                     <label>Auditor(es) de Apoyo:</label>
-                                    <input type="text" id="input-apoyo" class="edit-combo" placeholder="Ej. Juan, María (Opcional)">
+                                    <input type="text" id="input-apoyo" class="edit-combo" list="lista-auditores-auto" placeholder="Seleccionar de la lista (Opcional)">
                                 </div>
                             </div>
                             
@@ -1610,11 +1610,20 @@
         tbodyProg.innerHTML = programadas.length === 0 ? '<tr><td colspan="2" style="text-align:center;">No hay programadas para este mes</td></tr>' : 
             programadas.map(a => `<tr><td><strong>${a.sucursal}</strong></td><td>${formatDate(a.fechaProg, true)}</td></tr>`).join('');
 
+        // REEMPLAZA DESDE: let htmlDescanso = ''; HASTA ANTES DE: tbodyPend.innerHTML = ...
         let htmlDescanso = '';
         if (filtroEstado === 'all' || filtroEstado === 'pending') {
             htmlDescanso = `
             <tr class="fila-clickable" style="background-color: #fff7ed; color: #ea580c; border-left: 4px solid #ea580c;" onclick="seleccionarUnidadAuditoria('DESC', this)">
                 <td style="display:flex; align-items:center;"><i data-lucide="coffee" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR DESCANSO</td>
+                <td>-</td>
+            </tr>
+            <tr class="fila-clickable" style="background-color: #f0fdfa; color: #0d9488; border-left: 4px solid #0d9488;" onclick="seleccionarUnidadAuditoria('VAC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="palmtree" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR VACACIONES</td>
+                <td>-</td>
+            </tr>
+            <tr class="fila-clickable" style="background-color: #fdf4ff; color: #c026d3; border-left: 4px solid #c026d3;" onclick="seleccionarUnidadAuditoria('PERM', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="user-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR PERMISO</td>
                 <td>-</td>
             </tr>`;
         }
@@ -1635,7 +1644,7 @@
         if (contadoresDiv) {
             const conteoPorAuditor = {};
             programadas.forEach(a => {
-                if (a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO') return; 
+                if (['DESC', 'VAC', 'PERM'].includes(a.claveSimi) || ['DESCANSO', 'VACACIONES', 'PERMISO'].includes(a.sucursal)) return; 
                 const auditor = a.auditor && a.auditor.trim() !== '' ? a.auditor.trim() : 'Sin asignar';
                 conteoPorAuditor[auditor] = (conteoPorAuditor[auditor] || 0) + 1;
             });
@@ -1689,13 +1698,31 @@
                 return aDateStr === currentDateStr; 
             });
 
-            let eventsHtml = auditoriasDelDia.map(a => {
-                const isDescanso = a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO';
-                const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
-                const cls = isPernocta && !isDescanso ? 'audit-event pernocta' : 'audit-event';
+                let eventsHtml = auditoriasDelDia.map(a => {
                 
-                const iconHtml = isDescanso ? '<i data-lucide="coffee" style="width:10px; height:10px;"></i>' : (isPernocta ? '<i data-lucide="moon" style="width:10px; height:10px;"></i>' : '<i data-lucide="user" style="width:10px; height:10px;"></i>');
-                const customStyle = isDescanso ? 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;' : '';
+                const isDescanso = a.claveSimi === 'DESC' || a.sucursal === 'DESCANSO';
+                const isVacaciones = a.claveSimi === 'VAC' || a.sucursal === 'VACACIONES';
+                const isPermiso = a.claveSimi === 'PERM' || a.sucursal === 'PERMISO';
+                const isSpecial = isDescanso || isVacaciones || isPermiso;
+                
+                const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
+                const cls = isPernocta && !isSpecial ? 'audit-event pernocta' : 'audit-event';
+                
+                let iconHtml = '<i data-lucide="user" style="width:10px; height:10px;"></i>';
+                let customStyle = '';
+
+                if (isDescanso) {
+                    iconHtml = '<i data-lucide="coffee" style="width:10px; height:10px;"></i>';
+                    customStyle = 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;';
+                } else if (isVacaciones) {
+                    iconHtml = '<i data-lucide="palmtree" style="width:10px; height:10px;"></i>';
+                    customStyle = 'background-color: #f0fdfa; border-left-color: #5eead4; color: #0f766e;';
+                } else if (isPermiso) {
+                    iconHtml = '<i data-lucide="user-check" style="width:10px; height:10px;"></i>';
+                    customStyle = 'background-color: #fdf4ff; border-left-color: #f0abfc; color: #a21caf;';
+                } else if (isPernocta) {
+                    iconHtml = '<i data-lucide="moon" style="width:10px; height:10px;"></i>';
+                }
 
                 let horaStr = a.hora ? a.hora.toString() : '';
                 if (horaStr.includes('T') || horaStr.includes('Z')) {
@@ -1719,7 +1746,8 @@
                 }
 
                 const horaHtml = horaStr && !isDescanso ? `<div style="font-size:11px; background:rgb(159 255 136 / 50%); border-radius:3px; padding:1px 4px; display:inline-flex; align-items:center; gap:3px; margin-bottom:2px; color: #064e3b;"><i data-lucide="clock" style="width:8px; height:8px;"></i> ${horaStr}</div>` : '';
-                const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="opacity: 0.85; margin-top:2px;"><i data-lucide="users" style="width:10px; height:10px;"></i> + ${a.apoyo}</div>` : '';
+                let apoyoNombreCorto = a.apoyo ? a.apoyo.trim().split(' ')[0] : '';
+                const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="opacity: 0.85; margin-top:2px;"><i data-lucide="users" style="width:10px; height:10px;"></i> + ${apoyoNombreCorto}</div>` : '';
 
                 return `
                 <div class="${cls}" style="${customStyle}" title="Unidad: ${a.sucursal}&#10;Hora: ${horaStr || 'No definida'}&#10;Líder: ${a.auditor}&#10;Apoyo: ${a.apoyo || 'Ninguno'}&#10;Estado: ${a.estado}" onclick="seleccionarUnidadAuditoria('${a.claveSimi}')">
@@ -1749,16 +1777,30 @@
         const tbodyPend = document.getElementById('tbody-pendientes');
         const mesSeleccionado = obtenerMesSeleccionado();
 
-        let htmlDescanso = '';
-        if ("descanso".includes(t)) {
-             htmlDescanso = `
+        let htmlEspeciales = '';
+        if ("descanso".includes(t) || t === "") {
+             htmlEspeciales += `
             <tr class="fila-clickable" style="background-color: #fff7ed; color: #ea580c; border-left: 4px solid #ea580c;" onclick="seleccionarUnidadAuditoria('DESC', this)">
                 <td style="display:flex; align-items:center;"><i data-lucide="coffee" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR DESCANSO</td>
                 <td>-</td>
             </tr>`;
         }
+        if ("vacaciones".includes(t) || t === "") {
+             htmlEspeciales += `
+            <tr class="fila-clickable" style="background-color: #f0fdfa; color: #0d9488; border-left: 4px solid #0d9488;" onclick="seleccionarUnidadAuditoria('VAC', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="palmtree" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR VACACIONES</td>
+                <td>-</td>
+            </tr>`;
+        }
+        if ("permiso".includes(t) || "permisos".includes(t) || t === "") {
+             htmlEspeciales += `
+            <tr class="fila-clickable" style="background-color: #fdf4ff; color: #c026d3; border-left: 4px solid #c026d3;" onclick="seleccionarUnidadAuditoria('PERM', this)">
+                <td style="display:flex; align-items:center;"><i data-lucide="user-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> PROGRAMAR PERMISO</td>
+                <td>-</td>
+            </tr>`;
+        }
 
-        tbodyPend.innerHTML = htmlDescanso + sucursales.filter(s => s.nombre.toLowerCase().includes(t))
+        tbodyPend.innerHTML = htmlEspeciales + sucursales.filter(s => s.nombre.toLowerCase().includes(t))
                                         .map(s => generarFilaPendiente(s, mesSeleccionado))
                                         .filter(fila => fila !== null)
                                         .join('');
@@ -1784,6 +1826,10 @@
         let suc = sucursales.find(s => s.claveSimi === claveSimi);
         if (claveSimi === 'DESC') {
             suc = { claveSimi: 'DESC', nombre: 'DESCANSO' };
+        } else if (claveSimi === 'VAC') {
+            suc = { claveSimi: 'VAC', nombre: 'VACACIONES' };
+        } else if (claveSimi === 'PERM') {
+            suc = { claveSimi: 'PERM', nombre: 'PERMISO' };
         }
 
         if (!suc) return;
