@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Auditorías 2.4 </title>
+    <title>Calendario Auditorías 2.4.1 -beta</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        /* Ajuste responsivo universal para evitar desbordamientos por padding */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         :root { 
             --primary: #0f172a; 
             --light: #f8fafc; 
@@ -21,22 +26,23 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
 
-        .top-menu { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .top-menu h1 { margin: 0; color: var(--primary); font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        /* Agregado flex-wrap y gap para apilar en móviles */
+        .top-menu { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px;}
+        .top-menu h1 { margin: 0; color: var(--primary); font-size: 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        .user-info { font-size: 13px; color: var(--accent); background: #f0f9ff; padding: 4px 10px; border-radius: 20px; border: 1px solid #bae6fd; font-weight: 600; margin-left: 10px; }
+        .user-info { font-size: 13px; color: var(--accent); background: #f0f9ff; padding: 4px 10px; border-radius: 20px; border: 1px solid #bae6fd; font-weight: 600; margin-left: 10px; display: inline-block;}
 
-        .menu-btn { background-color: #ffffff; color: var(--text-dark); border: 1px solid var(--border); padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .menu-btn { background-color: #ffffff; color: var(--text-dark); border: 1px solid var(--border); padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); white-space: nowrap;}
         .menu-btn.btn-dark { background-color: var(--primary); color: #fff; border-color: var(--primary); }
         .menu-btn.btn-dark:hover { background-color: #334155; }
         
-        .edit-combo { padding: 8px; border: 1px solid var(--border); border-radius: 4px; background-color: #f8fafc; font-size: 14px; box-sizing: border-box; outline: none; font-weight: bold; color: var(--primary);}
+        .edit-combo { padding: 8px; border: 1px solid var(--border); border-radius: 4px; background-color: #f8fafc; font-size: 14px; outline: none; font-weight: bold; color: var(--primary); width: 100%; max-width: 150px;}
         .edit-combo:focus { border-color: var(--primary); }
         
         #mensaje-estado { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
 
         /* CALENDARIO */
-        .calendar-wrapper { background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .calendar-wrapper { background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%;}
         .calendar-header-row { display: grid; grid-template-columns: repeat(7, 1fr); background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: bold; text-align: center; font-size: 12px; color: var(--text-muted); min-width: 750px; }
         .calendar-header-row div { padding: 10px 5px; border-right: 1px solid var(--border); }
         .calendar-header-row div:last-child { border-right: none; }
@@ -66,19 +72,19 @@
         .auditor-badge.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .badge-total { background: #f1f5f9; font-weight: bold; border-style: dashed; }
 
-        /* Login oculto */
-        .login-container { max-width: 320px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .login-input { width: 100%; margin-bottom: 15px; text-align: center; letter-spacing: 3px; font-size: 18px; }
+        /* Login oculto - Ajuste de width al 90% para móviles */
+        .login-container { width: 90%; max-width: 320px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .login-input { width: 100%; max-width: 100%; margin-bottom: 15px; text-align: center; letter-spacing: 3px; font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="top-menu">
-    <div style="display: flex; align-items: center;">
-        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.4</h1>
+    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.4.1 -beta</h1>
         <div id="user-display" class="user-info" style="display: none;"></div>
     </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <div id="mensaje-estado"><i data-lucide="loader" class="spin"></i> Cargando datos...</div>
         <button class="menu-btn btn-dark" onclick="descargarDatosDeAPI()"><i data-lucide="refresh-cw"></i> Sincronizar</button>
     </div>
@@ -86,7 +92,7 @@
 
 <div id="app-content" style="display: none;">
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #fff; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px; border-right: 1px solid var(--border); padding-right: 15px; margin-right: 5px;">
+        <div style="display: flex; align-items: center; gap: 10px; border-right: 1px solid var(--border); padding-right: 15px; margin-right: 5px; flex-wrap: wrap;">
             <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="filter"></i> Mes:</label>
             <input type="month" id="filtro-mes" class="edit-combo" onchange="renderizarCalendario()">
         </div>
@@ -111,7 +117,7 @@
 <script>
     lucide.createIcons();
     
-    // decode    //          
+    // decode          
     const _p1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2";
     const _p2 = "J3VjZxdFhFcHRVbV85RFdqUFh5TlBnT1dqZ1dQb2pEc1d5LWpyMXc0Wjd";
     const _p3 = "uWWk1ZTVwUzFncjZqUU05LXduc1FqUS9leGVj";
