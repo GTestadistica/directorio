@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Auditorias 1.2</title>
+    <title>Calendario Auditorías 2.3</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { 
@@ -13,6 +13,7 @@
             --text-dark: #1e293b;
             --text-muted: #64748b;
             --accent: #0284c7;
+            --success: #22c55e;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 15px; color: var(--text-dark); }
@@ -23,6 +24,8 @@
         .top-menu { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .top-menu h1 { margin: 0; color: var(--primary); font-size: 18px; display: flex; align-items: center; gap: 8px; }
         
+        .user-info { font-size: 13px; color: var(--accent); background: #f0f9ff; padding: 4px 10px; border-radius: 20px; border: 1px solid #bae6fd; font-weight: 600; margin-left: 10px; }
+
         .menu-btn { background-color: #ffffff; color: var(--text-dark); border: 1px solid var(--border); padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .menu-btn.btn-dark { background-color: var(--primary); color: #fff; border-color: var(--primary); }
         .menu-btn.btn-dark:hover { background-color: #334155; }
@@ -38,14 +41,17 @@
         .calendar-header-row div { padding: 10px 5px; border-right: 1px solid var(--border); }
         .calendar-header-row div:last-child { border-right: none; }
         
-        .calendar-grid-days { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(100px, auto); min-width: 750px; }
+        .calendar-grid-days { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(110px, auto); min-width: 750px; }
         .calendar-day { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px; position: relative; background: #fff; transition: background 0.2s; }
         .calendar-day:nth-child(7n) { border-right: none; }
         .calendar-day:hover { background-color: #f8fafc; }
         .calendar-day.empty { background: #f1f5f9; }
 
         .day-number { font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 8px; display: inline-block; }
-        .day-today .day-number { color: #fff; background: var(--primary); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
+        
+        /* ESTILO DÍA ACTUAL: Fondo Verde Pastel */
+        .day-today { background-color: #f0fdf4 !important; border: 2px solid #22c55e !important;}
+        .day-today .day-number { color: #fff; background: var(--primary); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;}
         
         /* EVENTOS */
         .audit-event { background: #e0f2fe; border-left: 3px solid #0284c7; padding: 5px; margin-bottom: 5px; border-radius: 4px; font-size: 11px; color: #0c4a6e; display: flex; flex-direction: column; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; transition: all 0.2s; }
@@ -54,18 +60,22 @@
         .event-subtitle { display: flex; align-items: center; gap: 4px; font-size: 10px; opacity: 0.9; }
         .event-time { font-size: 10px; background: rgba(255,255,255,0.6); border-radius: 3px; padding: 2px 5px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 4px; font-weight: bold;}
 
-        /* BADGES CONTADORES */
+        /* BADGES */
         .auditor-badge { background: #fff; padding: 4px 12px; border-radius: 6px; font-size: 11px; border: 1px solid var(--border); color: var(--text-dark); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px; user-select: none; }
-        .auditor-badge:hover { border-color: var(--accent); background: #f0f9ff; }
         .auditor-badge.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .badge-total { background: #f1f5f9; font-weight: bold; border-style: dashed; }
+
+        /* Login oculto */
+        .login-container { max-width: 320px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .login-input { width: 100%; margin-bottom: 15px; text-align: center; letter-spacing: 3px; font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="top-menu">
-    <div>
-        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 1.2 </h1>
+    <div style="display: flex; align-items: center;">
+        <h1><i data-lucide="calendar-days"></i> Calendario Auditorías 2.3 </h1>
+        <div id="user-display" class="user-info" style="display: none;"></div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">
         <div id="mensaje-estado"><i data-lucide="loader" class="spin"></i> Cargando datos...</div>
@@ -77,44 +87,42 @@
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #fff; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 10px; border-right: 1px solid var(--border); padding-right: 15px; margin-right: 5px;">
             <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 6px;"><i data-lucide="filter"></i> Mes:</label>
-            <input type="month" id="filtro-mes" class="edit-combo" onchange="limpiarFiltroAuditor()">
+            <input type="month" id="filtro-mes" class="edit-combo" onchange="renderizarCalendario()">
         </div>
-        
         <div id="resumen-auditores" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
     </div>
 
     <div class="calendar-wrapper">
-        <div class="calendar-header-row">
-            <div>Lunes</div><div>Martes</div><div>Miércoles</div><div>Jueves</div><div>Viernes</div><div>Sábado</div><div>Domingo</div>
-        </div>
+        <div class="calendar-header-row"></div>
         <div id="calendario-dias" class="calendar-grid-days"></div>
     </div>
 </div>
 
-<div id="pantalla-bloqueo" style="display: none; text-align: center; margin-top: 50px;">
-    <i data-lucide="lock" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 15px;"></i>
-    <h2 style="color: var(--text-dark);">Acceso Protegido</h2>
-    <p style="color: var(--text-muted);">Debes ingresar con una contraseña válida para ver las auditorías.</p>
-    <button class="menu-btn btn-dark" style="margin: 20px auto;" onclick="pedirContrasena()"><i data-lucide="key"></i> Ingresar Contraseña</button>
+<div id="pantalla-bloqueo" style="display: none; text-align: center; margin-top: 80px;">
+    <i data-lucide="lock" style="width: 64px; height: 64px; color: var(--text-muted); margin-bottom: 20px;"></i>
+    <h2 style="color: var(--text-dark); margin-bottom: 10px;">Acceso Restringido</h2>
+    <div class="login-container">
+        <input type="password" id="pass-input" class="edit-combo login-input" placeholder="••••••••" onkeypress="if(event.key === 'Enter') validarAcceso()">
+        <button class="menu-btn btn-dark" style="width: 100%; justify-content: center;" onclick="validarAcceso()"><i data-lucide="key"></i> Ingresar al Sistema</button>
+    </div>
 </div>
 
 <script>
     lucide.createIcons();
-//  
-    // MEJORA 1: OFUSCACIÓN DE LA URL DE LA API
-    const _p1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5";
-    const _p2 = "Y2J6N0R3c0tHT0p0SVJBM3k0MEU3RUEyVk9ienI0c2p";
-    const _p3 = "GN19FWHFCUlV4UG4tLWFmamVQMGsycmxqMTRySUtGNXU2bEovZXhlYw";
+    
+    // decode    //          
+    const _p1 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2";
+    const _p2 = "J3VjZxdFhFcHRVbV85RFdqUFh5TlBnT1dqZ1dQb2pEc1d5LWpyMXc0Wjd";
+    const _p3 = "uWWk1ZTVwUzFncjZqUU05LXduc1FqUS9leGVj";
     const API_URL = atob(_p1 + _p2 + _p3); 
 
     let auditoriasGlobal = [];
     let rolesGlobal = [];
-    let usuarioAutenticado = false;
-    let filtroAuditorSeleccionado = null; 
+    let usuarioActivo = null; 
 
     window.onload = () => {
-        const today = new Date();
-        const monthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        const now = new Date();
+        const monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
         document.getElementById('filtro-mes').value = monthStr;
         descargarDatosDeAPI();
     };
@@ -125,194 +133,164 @@
         lucide.createIcons();
         
         try {
-            const response = await fetch(API_URL);
+            const response = await fetch(API_URL + "?accion=GET_CALENDARIO"); 
             const data = await response.json();
-
-            // MEJORA 2: CARGA LIGERA - Liberamos memoria inmediatamente
-            // Eliminamos del objeto todo lo que no usamos en este visor para que la página fluya rápido
-            delete data.plantilla;
-            delete data.detalle;
-            delete data.historial;
-            delete data.horarios;
-            delete data.detalleAuditoria;
 
             if (data.auditorias && data.auditorias.length > 1) {
                 auditoriasGlobal = data.auditorias.slice(1).map((col, idx) => ({
                     idRow: idx + 2,
-                    fechaRegistro: col[0], claveSimi: col[1]?.toString().trim(), sucursal: col[2], 
-                    fechaProg: col[3], auditor: col[4], pernocta: col[5], estado: col[6],
-                    hora: col[7] || '', apoyo: col[8] || ''
+                    fechaRegistro: col[0], 
+                    claveSimi: col[1]?.toString().trim(), 
+                    sucursal: col[2], 
+                    fechaProg: col[3], 
+                    auditor: col[4], 
+                    pernocta: col[5], 
+                    estado: col[6],
+                    hora: col[7] || '', 
+                    apoyo: col[8] || '',
+                    claveFR: col[9]?.toString().trim() // Mapeo de ClaveFR desde columna J
                 }));
-            } else {
-                auditoriasGlobal = [];
             }
 
             if (data.accesos && data.accesos.length > 1) {
                 rolesGlobal = data.accesos.slice(1).map(col => ({
-                    rol: col[0], password: col[1]?.toString(), permisos: col[2]?.toString().toUpperCase()
+                    rol: col[0], 
+                    password: col[1]?.toString(), 
+                    permisos: col[2]?.toString().toUpperCase(),
+                    numEmpleado: col[3] || '',
+                    nombre: col[4] || ''
                 }));
             }
 
-            status.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px;"></i> Actualizado ${new Date().toLocaleTimeString()}`;
+            status.innerHTML = `<i data-lucide="check-circle" style="width:14px; height:14px; color:var(--success)"></i> Sincronizado`;
             lucide.createIcons();
 
-            if (!usuarioAutenticado) {
-                pedirContrasena();
+            if (!usuarioActivo) {
+                document.getElementById('pantalla-bloqueo').style.display = 'block';
+                document.getElementById('pass-input').focus();
             } else {
                 renderizarCalendario();
             }
 
         } catch (e) { 
-            status.innerHTML = '<i data-lucide="alert-circle"></i> Error de conexión'; 
+            status.innerHTML = '<i data-lucide="alert-circle" style="color:red"></i> Error de conexión'; 
             lucide.createIcons();
         }
     }
 
-    function pedirContrasena() {
-        document.getElementById('pantalla-bloqueo').style.display = 'none';
-        const pass = prompt("Ingresa tu contraseña de acceso:");
-        if (!pass) {
-            document.getElementById('pantalla-bloqueo').style.display = 'block';
-            return;
-        }
+    function validarAcceso() {
+        const pass = document.getElementById('pass-input').value;
+        const user = rolesGlobal.find(r => r.password === pass);
 
-        const usuario = rolesGlobal.find(r => r.password === pass);
-        if (usuario && (usuario.permisos.includes("TODO") || usuario.permisos.includes("AUDITORIA"))) {
-            usuarioAutenticado = true;
+        if (user && (user.permisos.includes("ADMIN") || user.permisos.includes("AUDITORIA"))) {
+            usuarioActivo = user;
+            const display = document.getElementById('user-display');
+            display.innerHTML = `<i data-lucide="user-check" style="width:14px; height:14px;"></i> ${user.numEmpleado} - ${user.nombre}`;
+            display.style.display = 'flex';
             document.getElementById('app-content').style.display = 'block';
+            document.getElementById('pantalla-bloqueo').style.display = 'none';
+            lucide.createIcons();
             renderizarCalendario();
         } else {
-            alert("⛔ Contraseña incorrecta.");
-            document.getElementById('pantalla-bloqueo').style.display = 'block';
+            alert("⛔ Acceso Denegado: Contraseña incorrecta o sin permisos.");
+            document.getElementById('pass-input').value = "";
         }
-    }
-
-    function toggleFiltroAuditor(auditor) {
-        if (filtroAuditorSeleccionado === auditor) {
-            filtroAuditorSeleccionado = null; 
-        } else {
-            filtroAuditorSeleccionado = auditor;
-        }
-        renderizarCalendario();
-    }
-
-    function limpiarFiltroAuditor() {
-        filtroAuditorSeleccionado = null;
-        renderizarCalendario();
     }
 
     function renderizarCalendario() {
         const mesVal = document.getElementById('filtro-mes').value;
-        if (!mesVal) return;
+        if (!mesVal || !usuarioActivo) return;
         
         const [year, month] = mesVal.split('-').map(Number);
         
-        // --- 1. PROCESAR DATOS DEL MES ---
+        // CORRECCIÓN DÍA ACTUAL: Fecha Local Real
+        const now = new Date();
+        const hoyISO = now.getFullYear() + '-' + 
+                       String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(now.getDate()).padStart(2, '0');
+
         const auditoriasDelMes = auditoriasGlobal.filter(a => {
             if (a.estado !== "Programada" || !a.fechaProg) return false;
             const d = new Date(a.fechaProg);
-            return (d.getFullYear() === year && (d.getMonth() + 1) === month);
+            const perteneceAlMes = (d.getUTCFullYear() === year && (d.getUTCMonth() + 1) === month);
+            if (!perteneceAlMes) return false;
+
+            if (usuarioActivo.permisos.includes("ADMIN")) return true;
+            const idEnAuditoria = a.auditor ? a.auditor.split('-')[0].trim() : "";
+            return parseInt(idEnAuditoria, 10) === parseInt(usuarioActivo.numEmpleado, 10);
         });
 
-        // --- 2. CONTADORES ---
-        const contadores = {};
-        let totalEfectivo = 0; // Nueva variable para el total real (sin descansos)
-        auditoriasDelMes.forEach(a => {
-    // Detectamos si es descanso con la misma lógica que usas abajo
-            const isDescanso = a.claveSimi === 'DESC' || (a.sucursal && a.sucursal.toUpperCase().includes('DESCANSO'));
-            
-            if (!isDescanso) {
-                const nombre = a.auditor || 'Sin asignar';
-                contadores[nombre] = (contadores[nombre] || 0) + 1;
-                totalEfectivo++; // Solo sumamos si no es descanso
-            }
-        });
+        // Inicio en Lunes
+        const header = document.querySelector('.calendar-header-row');
+        header.innerHTML = '<div>Lunes</div><div>Martes</div><div>Miércoles</div><div>Jueves</div><div>Viernes</div><div>Sábado</div><div>Domingo</div>';
 
-        const resumenDiv = document.getElementById('resumen-auditores');
-// Usamos totalEfectivo en lugar de auditoriasDelMes.length
-let badgesHtml = `<div class="auditor-badge badge-total ${!filtroAuditorSeleccionado ? 'active' : ''}" onclick="limpiarFiltroAuditor()">Total Mes: ${totalEfectivo}</div>`;
-        
-        Object.entries(contadores).forEach(([nom, cant]) => {
-            const isActive = filtroAuditorSeleccionado === nom ? 'active' : '';
-            badgesHtml += `<div class="auditor-badge ${isActive}" onclick="toggleFiltroAuditor('${nom}')"><strong>${nom}:</strong> ${cant}</div>`;
-        });
-        resumenDiv.innerHTML = badgesHtml;
-
-        // --- 3. FILTRAR PARA VISUALIZACIÓN ---
-        let datosParaMostrar = auditoriasDelMes;
-        if (filtroAuditorSeleccionado) {
-            datosParaMostrar = auditoriasDelMes.filter(a => a.auditor === filtroAuditorSeleccionado);
-        }
-
-        // --- 4. RENDERIZAR GRILLA ---
         const container = document.getElementById('calendario-dias');
         container.innerHTML = '';
 
-        // Obtenemos el día (0=Dom, 1=Lun...)
         let firstDay = new Date(year, month - 1, 1).getDay();
-       // REAJUSTE PARA INICIO EN LUNES:
-        // Si getDay() es 0 (Domingo), lo pasamos a 6. Si es > 0, le restamos 1.
-        // Esto hace que Lunes sea 0 y Domingo 6.
-        const adjustment = firstDay === 0 ? 6 : firstDay - 1;
-        
+        firstDay = (firstDay === 0) ? 6 : firstDay - 1; // Ajuste Lunes=0
+
         const daysInMonth = new Date(year, month, 0).getDate();
-        
-        // Usamos el ajuste para crear los espacios vacíos
-        for (let i = 0; i < adjustment; i++) {
+
+        for (let i = 0; i < firstDay; i++) {
             container.innerHTML += `<div class="calendar-day empty"></div>`;
         }
 
-        const today = new Date();
-        const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month - 1;
-
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            
-            const auditoriasDelDia = datosParaMostrar.filter(a => {
+            const esHoy = currentDateStr === hoyISO;
+
+            const auditoriasDelDia = auditoriasDelMes.filter(a => {
                 const aDate = new Date(a.fechaProg);
-                const aDateStr = `${aDate.getFullYear()}-${String(aDate.getMonth() + 1).padStart(2, '0')}-${String(aDate.getDate()).padStart(2, '0')}`;
-                return aDateStr === currentDateStr; 
+                return aDate.toISOString().split('T')[0] === currentDateStr; 
             });
 
             let eventsHtml = auditoriasDelDia.map(a => {
-                // MEJORA 3: DETECTAR Y PINTAR DESCANSO ANARANJADO PASTEL
                 const isDescanso = a.claveSimi === 'DESC' || a.sucursal.toUpperCase().includes('DESCANSO');
-                const isPernocta = a.pernocta === true || a.pernocta === "true" || a.pernocta === "Sí" || a.pernocta === "TRUE" || a.pernocta === 1;
+                const isPernocta = a.pernocta === "Sí" || a.pernocta === true || String(a.pernocta).toUpperCase() === "TRUE";
                 
                 let cls = isPernocta && !isDescanso ? 'audit-event pernocta' : 'audit-event';
                 let customStyle = isDescanso ? 'background-color: #ffedd5; border-left-color: #fdba74; color: #c2410c;' : '';
-                let iconName = isDescanso ? 'coffee' : (isPernocta ? 'moon' : 'user');
                 
-                let horaStr = a.hora ? a.hora.toString() : '';
-                let match = horaStr.match(/(\d{1,2}):(\d{2})/);
-                if (match) {
-                    let h = parseInt(match[1], 10);
-                    let m = match[2];
-                    let ampm = h >= 12 ? 'PM' : 'AM';
-                    h = h % 12 || 12;
-                    horaStr = `${h}:${m} ${ampm}`;
+                // Formato Hora AM/PM
+                let horaDisplay = "";
+                if (a.hora && !isDescanso) {
+                    let [h, m] = a.hora.toString().split(':');
+                    let hNum = parseInt(h);
+                    let ampm = hNum >= 12 ? 'PM' : 'AM';
+                    hNum = hNum % 12 || 12;
+                    horaDisplay = `<div class="event-time"><i data-lucide="clock" style="width:10px; height:10px;"></i> ${hNum}:${m} ${ampm}</div>`;
                 }
 
-                const horaHtml = horaStr && !isDescanso ? `<div class="event-time"><i data-lucide="clock" style="width:10px; height:10px;"></i> ${horaStr}</div>` : '';
-                const apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="margin-top:3px;"><i data-lucide="users" style="width:12px; height:12px;"></i> + ${a.apoyo}</div>` : '';
+                // Apoyo
+                let apoyoHtml = a.apoyo ? `<div class="event-subtitle" style="color: #0369a1; font-weight: 600; margin-top:2px;">
+                    <i data-lucide="users" style="width:11px; height:11px;"></i> + ${a.apoyo}</div>` : '';
+
+                const linkAccion = esHoy && !isDescanso ? `onclick="abrirNuevaAuditoria('${a.claveSimi}', '${a.sucursal}')"` : "";
 
                 return `
-                <div class="${cls}" style="${customStyle}">
-                    ${horaHtml}
-                    <div class="event-title">${a.sucursal}</div>
-                    <div class="event-subtitle"><i data-lucide="${iconName}" style="width:12px; height:12px;"></i> ${a.auditor || 'N/A'}</div>
-                    ${apoyoHtml}
-                </div>`;
+                    <div class="${cls}" style="${customStyle} ${linkAccion ? 'cursor:pointer; border: 1px solid #0284c7;' : ''}" ${linkAccion}>
+                        ${horaDisplay}
+                        <div class="event-title">${a.sucursal}</div>
+                        <div class="event-subtitle"><i data-lucide="user" style="width:12px; height:12px;"></i> ${a.auditor}</div>
+                        ${apoyoHtml}
+                    </div>`;
             }).join('');
 
-            const isToday = isCurrentMonth && today.getDate() === day;
             container.innerHTML += `
-                <div class="calendar-day ${isToday ? 'day-today' : ''}">
+                <div class="calendar-day ${esHoy ? 'day-today' : ''}">
                     <div class="day-number">${day}</div>
                     <div>${eventsHtml}</div>
                 </div>`;
         }
         lucide.createIcons();
+    }
+
+    function abrirNuevaAuditoria(claveSimi, sucursal) {
+        const aud = auditoriasGlobal.find(a => a.claveSimi === claveSimi);
+        const claveFR = aud ? aud.claveFR : "00000";
+        const urlFinal = `${API_URL}?accion=INICIAR_AUDITORIA&claveSimi=${claveSimi}&claveFR=${claveFR}&sucursal=${encodeURIComponent(sucursal)}`;
+        window.open(urlFinal, '_blank');
     }
 </script>
 
