@@ -252,6 +252,15 @@
             #vista-pedidos > div:first-child > div { margin-left: 0 !important; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; width: 100%;}
             #vista-pedidos > div:first-child > div button { width: 100%; justify-content: center; }
         }
+        /* Añade esto al final de tu sección de <style> */
+            #passwordModal {
+                z-index: 1100 !important; /* Valor superior al 1060 del modal-custom */
+            }
+
+            /* También debemos asegurar que el fondo oscuro (backdrop) se vea correctamente */
+            .modal-backdrop {
+                z-index: 1090 !important;
+}
     </style>
 </head>
 <body>
@@ -863,7 +872,12 @@
             
             const modalEl = document.getElementById('passwordModal');
             const modal = new bootstrap.Modal(modalEl);
-            
+            if (!modal) {
+            modal = new bootstrap.Modal(modalEl, {
+                backdrop: 'static', // Evita que se cierre al dar clic fuera
+                keyboard: false
+            });
+        }
             passwordResolve = resolve;
             
             modal.show();
@@ -1228,7 +1242,7 @@
             return;
         }
         
-        if (usuario.permisos.includes("TODO") || usuario.permisos.includes("Admin") || usuario.permisos.includes("Mayra")) {
+        if (usuario.permisos.includes("TODO") || usuario.permisos.includes("Admin") || usuario.permisos.includes("EDICION")) {
             usuarioActivo = usuario.rol; 
             cambiarVista('horarios');
             renderizarTablaHorariosRH();
