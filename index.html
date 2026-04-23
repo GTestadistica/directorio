@@ -1045,8 +1045,8 @@
             sucursales.sort((a, b) => a.nombre.localeCompare(b.nombre));
             
             plantillaGlobal = data.plantilla.slice(1).map(col => ({
-				claveSucursal: (col[0] && col[0].toString().trim() !== "") ? col[0].toString().trim() : "SIN_ASIGNAR",
-                //claveSucursal: col[0]?.toString().trim(), noEmpleado: col[1]?.toString().trim() || '',
+				claveSucursal: (col[0] && col[0].toString().trim() !== "") ? col[1].toString().trim() : "SIN_ASIGNAR",
+              //claveSucursal: col[0]?.toString().trim(), noEmpleado: col[1]?.toString().trim() || '',
                 nombre: col[2] || '', puesto: col[3] || '', telefono: col[4] || '',
                 fechaModif: col[5] || '', userModif: col[6] || ''
             })).filter(p => p.nombre);
