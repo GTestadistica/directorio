@@ -1,7 +1,9 @@
 /* [AI-READ]: Sistema de diseño basado en variables CSS. Mantiene coherencia de colores sin alterar la paleta original del cliente. */
+@import url('layout.css');
+@import url('components.css');
 @import url('auditoria.css');
-@import url('cajachica.css');
-@import url('horarios.css');
+@import url('responsive.css');
+@import url('fixes-bootstrap.css');
 :root {
   --primary: #0f172a;
   --light: #ffffff;
