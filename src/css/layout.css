@@ -1,0 +1,116 @@
+/* --- LAYOUT SIDEBAR CON BOOTSTRAP --- */
+#wrapper {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+#sidebar-wrapper {
+  min-width: 260px;
+  max-width: 260px;
+  background-color: var(--sidebar-bg);
+  color: #fff;
+  transition: margin 0.3s ease-out, transform 0.3s ease-out;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+}
+
+#sidebar-wrapper.toggled {
+  margin-left: -260px;
+}
+
+#page-content-wrapper {
+  min-width: 0;
+  width: 100%;
+  transition: width 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-heading {
+  padding: 1.5rem 1.25rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* [AI-READ]: Estructura del menú de navegación. No modificar display flex ni comportamientos de collapse. */
+.sidebar-nav-item {
+  color: #0e325e;
+  padding: 12px 20px;
+  display: flex !important;
+  align-items: center;
+  text-decoration: none;
+  border-left: 4px solid transparent;
+  font-size: 14px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.sidebar-nav-item:hover {
+  background-color: var(--sidebar-hover);
+  color: #fff;
+}
+.sidebar-nav-item.active {
+  background-color: var(--sidebar-hover);
+  color: #fff;
+  border-left-color: var(--sidebar-active);
+  font-weight: bold;
+}
+.sidebar-nav-item i {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+
+.collapse-indicator {
+  transition: transform 0.2s;
+  width: 14px !important;
+  height: 14px !important;
+  margin-right: 0 !important;
+}
+.sidebar-nav-item:not(.collapsed) .collapse-indicator {
+  transform: rotate(180deg);
+}
+
+.sidebar-subnav-item {
+  color: #94a3b8;
+  padding: 10px 20px 10px 45px;
+  display: block;
+  text-decoration: none;
+  font-size: 13px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.sidebar-subnav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.sidebar-subnav-item.active {
+  color: #fff;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.1);
+}
+.sidebar-subnav-item i {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+/* Navbar Superior */
+.top-navbar {
+  background-color: #ffffff;
+  padding: 12px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}

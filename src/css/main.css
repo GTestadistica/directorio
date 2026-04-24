@@ -1,0 +1,36 @@
+/* [AI-READ]: Sistema de diseño basado en variables CSS. Mantiene coherencia de colores sin alterar la paleta original del cliente. */
+:root {
+  --primary: #0f172a;
+  --light: #ffffff;
+  --border: #cbd5e1;
+  --text-dark: #1e293b;
+  --text-muted: #1f252e;
+  --sidebar-bg: #f8f8f8;
+  --sidebar-hover: #ababab;
+  --sidebar-active: #ffffff;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light);
+  margin: 0;
+  color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.lucide {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+#passwordModal {
+  z-index: 1100 !important; /* Valor superior al 1060 del modal-custom */
+}

@@ -1,0 +1,25 @@
+//Uso: Correcciones de capas (z-index) y compatibilidad entre tus modales y los de Bootstrap.
+/* 1. Aseguramos que el modal de comprobante esté por encima del backdrop de 1090 */
+#modalComprobante {
+  z-index: 1110 !important;
+}
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+/* 3. Ajuste extra para que el iframe no se vea cortado o con bordes raros */
+.modal.fade {
+  z-index: 1070 !important;
+}
+#modalMotivoRechazo {
+  z-index: 1080 !important;
+}
+/* Ajuste para que el modal personalizado no bloquee a los de Bootstrap */
+.modal-custom {
+  z-index: 1050; /* Un poco menos que los de Bootstrap */
+}
+
+#modalPreviewBody iframe {
+  width: 100%;
+  height: 75vh;
+  border: none;
+}
