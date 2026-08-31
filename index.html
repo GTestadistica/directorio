@@ -2960,17 +2960,22 @@
             const adjustment = firstDay === 0 ? 6 : firstDay - 1;
             const daysInMonth = new Date(year, month, 0).getDate();
 
-            for (let i = 0; i < adjustment; i++) {
-                container.innerHTML += `<div class="calendar-day empty"></div>`;
-            }
-
             const today = new Date();
             const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month - 1;
 
             let htmlDias = '';
+            
+            const totalCells = adjustment + daysInMonth;
+            const extraDays = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
 
-            for (let day = 1; day <= daysInMonth; day++) {
-                const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            for (let day = 1 - adjustment; day <= daysInMonth + extraDays; day++) {
+                const currentDate = new Date(year, month - 1, day);
+                const currYear = currentDate.getFullYear();
+                const currMonth = currentDate.getMonth() + 1;
+                const currDay = currentDate.getDate();
+                const isOtherMonth = day < 1 || day > daysInMonth;
+
+                const currentDateStr = `${currYear}-${String(currMonth).padStart(2, '0')}-${String(currDay).padStart(2, '0')}`;
 
                 const auditoriasDelDia = auditoriasGlobal.filter(a => {
                     if (a.estado !== "Programada" || !a.fechaProg) return false;
@@ -3049,12 +3054,12 @@
                 </div>`;
                 }).join('');
 
-                const isToday = isCurrentMonth && today.getDate() === day;
+                const isToday = today.getDate() === currDay && today.getMonth() === currMonth - 1 && today.getFullYear() === currYear;
                 const todayClass = isToday ? 'day-today' : '';
 
                 htmlDias += `
-                <div class="calendar-day ${todayClass}">
-                    <div class="day-number">${day}</div>
+                <div class="calendar-day ${todayClass}" ${isOtherMonth ? 'style="opacity: 0.6; background-color: #f8fafc;"' : ''}>
+                    <div class="day-number">${currDay}</div>
                     <div style="margin-top: 5px;">${eventsHtml}</div>
                 </div>
             `;
