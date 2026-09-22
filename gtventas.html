@@ -1786,8 +1786,8 @@
             };
 
             return e('div', { className: (activeTab === 'analisis' || activeTab === 'proyeccion' || activeTab === 'vendedores') ? "h-screen flex flex-col overflow-hidden" : "min-h-screen pb-12" },
-                e('nav', { className: "bg-white shadow-sm px-6 py-2.5 flex justify-between items-center shrink-0 z-30" },
-                    e('div', { className: "flex items-center gap-4" },
+                e('nav', { className: "bg-white shadow-sm px-4 md:px-6 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0 shrink-0 z-30" },
+                    e('div', { className: "flex flex-wrap justify-center items-center gap-2 md:gap-4" },
                         e('div', { className: "sky-bg-primary text-white font-black px-2 py-1 rounded text-lg" }, "MG"),
                         e('h1', { className: "text-base font-bold sky-text" }, "METAS GERENCIA CLIENTE"),
                         e('button', {
@@ -1799,7 +1799,7 @@
                         ),
                         connectionError && e('span', { className: "text-[10px] text-red-500 font-bold" }, connectionError)
                     ),
-                    e('div', { className: "flex gap-6" },
+                    e('div', { className: "flex gap-4 md:gap-6 w-full md:w-auto overflow-x-auto justify-center md:justify-end whitespace-nowrap pb-1 md:pb-0" },
                         // Pestaña esquemas ocultada para el cliente
                         ['analisis', 'proyeccion', 'vendedores', 'informes'].map(tab => e('button', {
                             key: tab,
@@ -2628,7 +2628,8 @@
                                             e('span', { className: "text-[7px] text-gray-500 font-medium" }, `${[...empFarmaciasMap.values()].filter(v => v.length > 1).length} empleados con >1 sucursal (${multiUnidadRows.length} registros)`)
                                         )
                                     ),
-                                    e('table', { className: "w-full text-left border-collapse min-w-[1200px] text-[7px]" },
+                                    e('div', { className: "overflow-x-auto w-full" },
+                                        e('table', { className: "w-full text-left border-collapse min-w-[1200px] text-[7px]" },
                                         e('thead', { className: "sticky top-[27px] z-20 bg-gray-100 border-b text-[6px] uppercase text-gray-600 shadow-sm" },
                                             e('tr', null,
                                                 e('th', { className: "py-1.5 px-2 text-left bg-gray-100 sticky top-0 z-20 text-[6px]" }, "Farmacia"),
@@ -2692,7 +2693,8 @@
                                             )
                                         )
                                     )
-                                );
+                                ) // Cierre del div overflow-x-auto que agregamos
+                                ); // Cierre del container principal flex-1
                             })()
                         )
                     ] : activeTab === 'informes' ? [
@@ -2838,8 +2840,8 @@
                                 e(PanelFarmacias, { panel: panelDetalle, onClose: () => setPanelDetalle(null) }),
 
                                 // ENCABEZADO FIJO DE INDICADORES EN TABLA
-                                e('div', { className: "sticky top-0 z-10 bg-white pb-3 mb-2 border-b shadow-sm rounded-lg overflow-hidden" },
-                                    e('table', { className: "w-full text-left border-collapse" },
+                                e('div', { className: "sticky top-0 z-10 bg-white pb-3 mb-2 border-b shadow-sm rounded-lg overflow-x-auto" },
+                                    e('table', { className: "w-full text-left border-collapse min-w-max" },
                                         e('thead', { className: "bg-gray-100 border-b-2 border-sky-500" },
                                             e('tr', null,
                                                 e('th', { className: "p-2 font-bold text-gray-700 uppercase" }, ""),
@@ -2875,7 +2877,7 @@
                                 ),
 
                                 // TARJETAS POR RUBRO: PCP, BATEO, PP, CEPIP + CANDADOS
-                                e('div', { className: "grid grid-cols-5 gap-3" },
+                                e('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" },
                                     e(RubroCard, { titulo: "PCP", colorBorde: "border-sky-500", colorSi: "text-sky-700", colorNo: "text-red-600", si: unidadesMinimoPCP, no: unidadesNoPCP, total: totalFarmacias, farmsSi: farmsPcpSi, farmsNo: farmsPcpNo }),
                                     e(RubroCard, { titulo: "BATEO", colorBorde: "border-orange-400", colorSi: "text-orange-700", colorNo: "text-red-600", si: unidadesBateoOk, no: unidadesNoBateo, total: totalFarmacias, farmsSi: farmsBateoSi, farmsNo: farmsBateoNo }),
                                     e(RubroCard, { titulo: "PP", colorBorde: "border-indigo-400", colorSi: "text-indigo-700", colorNo: "text-red-600", si: unidadesPPOk, no: unidadesNoPP, total: totalFarmacias, farmsSi: farmsPPSi, farmsNo: farmsPPNo }),
@@ -3363,7 +3365,7 @@
                                                         )
                                                     )
                                                 ),
-                                                e('div', { className: "flex gap-2 w-full h-[500px]" },
+                                                e('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-2 w-full lg:h-[500px]" },
                                                     e(RankingTable, { title: "PCP %", dataKey: "promedioPct", metaVal: parsePercent(esquema.metaPCP || 0), isPct: true, iconKey: 'pcpOk' }),
                                                     e(RankingTable, { title: "BATEO", dataKey: "bateo", metaVal: parsePercent(esquema.bateo || 0), isPct: true, iconKey: 'bateoOk' }),
                                                     e(RankingTable, { title: "PP", dataKey: "pp", metaVal: parseNum(esquema.precioPromedio || 0), isMoneda: true, iconKey: 'ppOk' }),
@@ -3377,7 +3379,7 @@
                                 // RESUMEN EJECUTIVO
                                 e('div', { className: "glass-card p-5 rounded-xl flex flex-col col-span-2" },
                                     e('h3', { className: "text-[11px] font-black sky-text mb-4 uppercase border-b pb-2" }, "Resumen de Inversión y Premiación Global"),
-                                    e('div', { className: "grid grid-cols-3 gap-6 mt-2" },
+                                    e('div', { className: "grid grid-cols-1 sm:grid-cols-3 gap-6 mt-2" },
                                         e('div', { className: "bg-blue-50/50 p-4 rounded-lg flex flex-col items-center justify-center text-center border border-blue-100" },
                                             e('span', { className: "text-[9px] font-bold text-blue-800 uppercase mb-1" }, "Inversión Base (Metas)"),
                                             e('span', { className: "text-xl font-black text-blue-900 font-mono" }, `$${totalMetasGeneradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`)
