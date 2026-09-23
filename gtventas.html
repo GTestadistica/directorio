@@ -2319,7 +2319,7 @@
                                                             // CELDA CEPIP FARMACIA CON META EN GRIS
                                                             e('td', { className: "py-1 px-1.5 text-right font-mono text-[7px]" },
                                                                 e('div', { className: "flex flex-col items-end gap-0" },
-                                                                    e('span', { className: `${f.cepipOk ? 'text-green-600' : 'text-red-600'}` }, f.cepip),
+                                                                    e('span', { className: `${f.cepipOk ? 'text-green-600' : 'text-red-600'}` }, `${(Math.trunc(parseFloat(f.cepip) * 100) / 100).toFixed(2)}%`),
                                                                     esquema.cepipMin !== '' && e('span', { className: "text-[6px] text-gray-400" }, esquema.cepipMin),
                                                                     esquema.cepipMin !== '' && e('span', { className: "text-[6px] text-gray-500 font-bold" }, `${(f.cepip - parsePercent(esquema.cepipMin || 0)) > 0 ? '+' : ''}${(f.cepip - parsePercent(esquema.cepipMin || 0)).toFixed(2)}`)
                                                                 )
@@ -3400,7 +3400,7 @@
                                                     e(RankingTable, { title: "PCP %", dataKey: "promedioPct", metaVal: parsePercent(esquema.metaPCP || 0), isPct: true, iconKey: 'pcpOk' }),
                                                     e(RankingTable, { title: "BATEO", dataKey: "bateo", metaVal: parsePercent(esquema.bateo || 0), isPct: true, iconKey: 'bateoOk' }),
                                                     e(RankingTable, { title: "PP", dataKey: "pp", metaVal: parseNum(esquema.precioPromedio || 0), isMoneda: true, iconKey: 'ppOk' }),
-                                                    e(RankingTable, { title: "CEPIP", dataKey: "cepip", metaVal: parsePercent(esquema.cepipMin || 0), isPct: true, iconKey: 'cepipOk', multiplier: 100, compareToMeta: true }),
+                                                    e(RankingTable, { title: "CEPIP", dataKey: "cepip", metaVal: parsePercent(esquema.cepipMin || 0), isPct: true, iconKey: 'cepipOk', compareToMeta: true }),
                                                     e(RankingTable, { title: "3X2 %", dataKey: "3x2", metaVal: 100, isPct: true, iconKey: '3x2' })
                                                 )
                                             );
