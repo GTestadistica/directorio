@@ -3348,7 +3348,7 @@
                                                             let pass = compareToMeta ? (rawVal >= metaVal) : (iconKey === '3x2' ? f.supero3x2 : !!f[iconKey]);
                                                             let isWarning = false;
 
-                                                            if (!pass && compareToMeta) {
+                                                            if (!pass && metaVal > 0) {
                                                                 const threshold = metaVal * 0.9;
                                                                 if (rawVal >= threshold) isWarning = true;
                                                             }
