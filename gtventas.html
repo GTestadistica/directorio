@@ -166,6 +166,7 @@
             // ESTADO: CLIENTE CONEXION
             const [isConnecting, setIsConnecting] = useState(false);
             const [connectionError, setConnectionError] = useState(null);
+            const [lastSyncTime, setLastSyncTime] = useState(null);
 
             // FUNCIÓN PARA OBTENER DATOS (CLIENTE)
             const fetchDatosCliente = async () => {
@@ -190,6 +191,8 @@
                     if (data.analisisResultadoSupervisores) setAnalisisResultadoSupervisores(data.analisisResultadoSupervisores);
 
                     setNotificacion("Datos sincronizados correctamente");
+                    // TIMESTAMP ÚLTIMA SINCRONIZACIÓN
+                    setLastSyncTime(data.syncTimestamp || new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }));
                     setTimeout(() => setNotificacion(null), 3000);
                 } catch (err) {
                     setConnectionError(err.message);
@@ -371,8 +374,10 @@
                         if (type === 'pcpFarm') {
                             const pcpFarmSheet = workbook.Sheets[targetSheet];
                             const rawJson = XLSX.utils.sheet_to_json(pcpFarmSheet, { defval: '' });
+                            const g2Cell = pcpFarmSheet['G2'];
+                            const pcpFarmG2 = g2Cell ? g2Cell.v : 0;
                             setFilesStatus(prev => ({ ...prev, pcpFarm: { name: file.name, count: rawJson.length } }));
-                            setFilesData(prev => ({ ...prev, pcpFarm: rawJson }));
+                            setFilesData(prev => ({ ...prev, pcpFarm: rawJson, pcpFarmG2 }));
                             setNotificacion(`Archivo PCP FARM cargado (${rawJson.length} registros)`);
                             setTimeout(() => setNotificacion(null), 3000);
                             return;
@@ -536,31 +541,50 @@
                 // 3b. MAPEO PCP FARM: farmacia -> Importe Acum. PcP (columna [C]) y % Imp. PcP (columna [D])
                 const pcpFarmMap = new Map();
                 let sumProyPcpGerencia = 0;
+
+                // INDICADOR GERENCIA: buscar fila de totales para PCP%, sumar acumulados
+                let gerenciaPcpPct = 0;
+                if (fd.pcpFarmG2 !== undefined) {
+                    const pctStr = String(fd.pcpFarmG2).replace('%', '').replace(',', '.').trim();
+                    const pctNum = parseFloat(pctStr) || 0;
+                    gerenciaPcpPct = pctNum > 0 && pctNum <= 1 ? pctNum * 100 : pctNum;
+                }
+                
+                let gerenciaPcpAcum = 0;
                 let sumPctPcpGerencia = 0;
                 let countPcpGerencia = 0;
 
                 if (fd.pcpFarm && Array.isArray(fd.pcpFarm)) {
-                    fd.pcpFarm.forEach(row => {
+                    fd.pcpFarm.forEach((row) => {
                         const farm = String(row['Farmacia'] || row['FARMACIA'] || '').trim();
+                        const farmUpper = farm.toUpperCase();
                         const impAcum = parseNum(row['Importe Acum. PcP'] || row['Importe Acum. Pcp'] || row['IMPORTE ACUM. PCP'] || 0);
-                        // PCP%: col F = '% Imp. PcP', valor crudo string como '36.9%'
-                        const rawPctPcp = row['% Imp. PcP'] || row['% Imp. Pcp'] || row['% IMP. PCP'] || row['% Imp. PCP'] || 0;
+                        const impProy = parseNum(row['Importe Proy. PcP'] || row['Importe Proy. Pcp'] || row['IMPORTE PROY. PCP'] || 0);
+                        
+                        // PCP%: buscar dinámicamente la columna para evitar errores de espacios/corchetes
+                        const pcpKey = Object.keys(row).find(k => k.toUpperCase().includes('%') && k.toUpperCase().includes('IMP') && k.toUpperCase().includes('PCP')) || '% Imp. PcP';
+                        const rawPctPcp = row[pcpKey] || 0;
                         const pctStr = String(rawPctPcp).replace('%', '').replace(',', '.').trim();
                         const pctNum = parseFloat(pctStr) || 0;
                         // Si viene como decimal puro (< 1), convertir a porcentaje
                         const pctPcpNorm = pctNum > 0 && pctNum <= 1 ? pctNum * 100 : pctNum;
-                        if (farm) {
+
+                        const isTotalRow = farm === '' || farmUpper === 'TOTAL' || farmUpper === 'GERENCIA' || farmUpper.includes('TOTALES');
+
+                        if (!isTotalRow) {
                             pcpFarmMap.set(farm, { impAcum, pctPcp: pctPcpNorm });
-                            const impProy = parseNum(row['Importe Proy. PcP'] || row['Importe Proy. Pcp'] || row['IMPORTE PROY. PCP'] || 0);
                             sumProyPcpGerencia += impProy;
-                            // ACUMULAR para promedio gerencia
+                            gerenciaPcpAcum += impAcum; // SUMAMOS LOS ACUMULADOS
                             sumPctPcpGerencia += pctPcpNorm;
                             countPcpGerencia++;
                         }
                     });
                 }
-                // PROMEDIO DIRECTO sin Math.floor, 2 decimales
-                let gerenciaPcpPct = countPcpGerencia > 0 ? (sumPctPcpGerencia / countPcpGerencia) : 0;
+                
+                // Fallback: si no se encontró la celda G2 en el Excel, promediamos para no mostrar 0.00%
+                if (gerenciaPcpPct === 0 && countPcpGerencia > 0) {
+                    gerenciaPcpPct = sumPctPcpGerencia / countPcpGerencia;
+                }
 
                 // MAPEO SUPERVISORES Y CORTO
                 const supervisoresMap = new Map();
@@ -638,7 +662,8 @@
                         const cveKey = normalizeKey(rawCve);
                         const rawAlcance = row['ALCANCE ACUM'] || row['Alcance Acum'] || row['ALCANCE_ACUM'] || 0;
                         const rawNum = parseFloat(String(rawAlcance).replace('%', '').trim()) || 0;
-                        const alcanceAcum = rawNum;
+                        // CEPIP: multiplicar x100 para visualizar como porcentaje
+                        const alcanceAcum = rawNum * 100;
 
                         if (cveKey) {
                             cepipMap.set(cveKey, alcanceAcum);
@@ -988,7 +1013,8 @@
                 resultadoFarmacias.sort((a, b) => a.farmacia.localeCompare(b.farmacia));
                 setAnalisisResultado(resultadoFarmacias);
                 setIndicadorGerenciaData({
-                    pcpDlls: sumProyPcpGerencia,
+                    pcpAcum: gerenciaPcpAcum,
+                    pcpProy: sumProyPcpGerencia,
                     pcpPct: gerenciaPcpPct,
                     bateo: gerenciaBateo,
                     pp: gerenciaPP,
@@ -1797,6 +1823,8 @@
                         },
                             isConnecting ? "⏳ Conectando..." : "🔄 Actualizar Datos"
                         ),
+                        // TIMESTAMP ÚLTIMA SINCRONIZACIÓN
+                        lastSyncTime && e('span', { className: "text-[9px] text-gray-400 font-medium" }, `Sync: ${lastSyncTime}`),
                         connectionError && e('span', { className: "text-[10px] text-red-500 font-bold" }, connectionError)
                     ),
                     e('div', { className: "flex gap-4 md:gap-6 w-full md:w-auto overflow-x-auto justify-center md:justify-end whitespace-nowrap pb-1 md:pb-0" },
@@ -2845,7 +2873,8 @@
                                         e('thead', { className: "bg-gray-100 border-b-2 border-sky-500" },
                                             e('tr', null,
                                                 e('th', { className: "p-2 font-bold text-gray-700 uppercase" }, ""),
-                                                e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "PCP $"),
+                                                e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "PCP $ Acum"),
+                                                e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "PCP $ Proy"),
                                                 e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "PCP %"),
                                                 e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "BATEO"),
                                                 e('th', { className: "p-2 font-bold text-gray-700 uppercase text-center" }, "PP"),
@@ -2857,6 +2886,7 @@
                                             e('tr', { className: "border-b hover:bg-gray-50" },
                                                 e('td', { className: "p-2 font-black text-sky-800 uppercase" }, "INDICADOR GENÉRICOS"),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, esquema.usarMetaPCPDollar ? 'Activo' : 'Inactivo'),
+                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, esquema.metaPCP ? `${esquema.metaPCP}%` : '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, esquema.bateo ? `${esquema.bateo}%` : '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, esquema.precioPromedio ? `$${parseFloat(esquema.precioPromedio).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'),
@@ -2865,8 +2895,9 @@
                                             ),
                                             e('tr', { className: "hover:bg-gray-50" },
                                                 e('td', { className: "p-2 font-black text-sky-800 uppercase" }, "INDICADOR GERENCIA:"),
-                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pcpDlls ? `$${parseFloat(indicadorGerenciaData.pcpDlls).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'),
-                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pcpPct ? `${indicadorGerenciaData.pcpPct.toFixed(1)}%` : '-'),
+                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pcpAcum ? `$${parseFloat(indicadorGerenciaData.pcpAcum).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'),
+                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pcpProy ? `$${parseFloat(indicadorGerenciaData.pcpProy).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'),
+                                                e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pcpPct != null ? `${(Math.trunc(parseFloat(indicadorGerenciaData.pcpPct) * 100) / 100).toFixed(2)}%` : '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.bateo ? `${indicadorGerenciaData.bateo.toFixed(2)}%` : '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.pp ? `$${parseFloat(indicadorGerenciaData.pp).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'),
                                                 e('td', { className: "p-2 text-center text-[20px] font-mono font-bold text-sky-700" }, indicadorGerenciaData && indicadorGerenciaData.cepip ? `${indicadorGerenciaData.cepip.toFixed(2)}%` : '-'),
@@ -3307,17 +3338,17 @@
                                                     return v;
                                                 };
 
-                                                return e('div', { className: "glass-card p-2 rounded-xl flex flex-col flex-1" },
-                                                    e('div', { className: "flex justify-center items-center mb-2 border-b pb-1" },
-                                                        e('h3', { className: "text-[11px] font-black text-gray-700 uppercase" }, title)
+                                                return e('div', { className: "glass-card p-1.5 rounded-xl flex flex-col flex-1" },
+                                                    e('div', { className: "flex justify-center items-center mb-1.5 border-b pb-1" },
+                                                        e('h3', { className: "text-[10px] font-black text-gray-700 uppercase" }, title)
                                                     ),
-                                                    e('div', { className: "flex flex-col gap-[1px] text-[8px] overflow-y-auto pr-1 flex-1" },
+                                                    e('div', { className: "flex flex-col gap-[1px] text-[7px] overflow-y-auto pr-1 flex-1" },
                                                         sortedData.map((f, i) => {
                                                             const rawVal = getVal(f);
                                                             let pass = compareToMeta ? (rawVal >= metaVal) : (iconKey === '3x2' ? f.supero3x2 : !!f[iconKey]);
                                                             let isWarning = false;
 
-                                                            if (!pass) {
+                                                            if (!pass && compareToMeta) {
                                                                 const threshold = metaVal * 0.9;
                                                                 if (rawVal >= threshold) isWarning = true;
                                                             }
@@ -3325,20 +3356,19 @@
                                                             const showStar = esEstrella(f);
                                                             const icon = pass ? '🟢' : (isWarning ? '🟡' : '🔴');
                                                             const rowColor = pass ? 'bg-green-50/70 border border-green-100' : (isWarning ? 'bg-yellow-50/70 border border-yellow-100' : 'bg-red-50/70 border border-red-100');
-                                                            const isBelowMeta = rawVal < metaVal;
+                                                            const isBelowMeta = compareToMeta ? rawVal < metaVal : !pass;
 
                                                             return e(React.Fragment, { key: f.farmacia },
                                                                 (i > 0 && getVal(sortedData[i - 1]) >= metaVal && isBelowMeta)
-                                                                    ? e('div', { className: "w-full border-t border-dashed border-gray-400 my-[2px] relative shrink-0" })
+                                                                    ? e('div', { className: "w-full border-t border-dashed border-gray-400 my-[1px] relative shrink-0" })
                                                                     : null,
-                                                                e('div', { className: `flex items-center justify-between px-1 py-0.5 rounded ${rowColor} shrink-0` },
+                                                                e('div', { className: `flex items-center justify-between px-1 py-[1.5px] rounded ${rowColor} shrink-0` },
                                                                     e('div', { className: "flex items-center gap-1 min-w-0" },
-                                                                        e('span', { className: "text-gray-500 w-3 text-right shrink-0" }, i + 1),
-                                                                        e('span', { className: "uppercase truncate w-[75px]", title: f.corto || f.farmacia }, showStar ? '⭐ ' + (f.corto || f.farmacia) : (f.corto || f.farmacia))
+                                                                        e('span', { className: "uppercase truncate w-[90px]", title: f.corto || f.farmacia }, showStar ? '⭐ ' + (f.corto || f.farmacia) : (f.corto || f.farmacia))
                                                                     ),
                                                                     e('div', { className: "flex items-center gap-1 shrink-0" },
-                                                                        e('span', { className: "text-[7px]" }, icon),
-                                                                        e('span', { className: "font-mono w-[45px] text-right" }, formatVal(rawVal))
+                                                                        e('span', { className: "text-[6px]" }, icon),
+                                                                        e('span', { className: "font-mono w-[40px] text-right" }, formatVal(rawVal))
                                                                     )
                                                                 )
                                                             );
@@ -3353,7 +3383,7 @@
 
                                             return e('div', { className: "space-y-3" },
                                                 e('div', { className: "flex items-center justify-between glass-card p-3 rounded-xl shadow-sm border-t-4 border-sky-500" },
-                                                    e('h3', { className: "text-xs font-bold text-gray-800 uppercase" }, "Desempeño Global por Rubro"),
+                                                    e('h3', { className: "text-xs font-bold text-gray-800 uppercase" }, `Desempeño Global por Rubro (${supFiltrado.length} Farmacias)`),
                                                     e('div', { className: "flex items-center gap-2" },
                                                         e('span', { className: "text-[9px] font-bold text-gray-500 uppercase" }, "Supervisor:"),
                                                         supervisoresDisponibles.map(sv =>
@@ -3365,7 +3395,8 @@
                                                         )
                                                     )
                                                 ),
-                                                e('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-2 w-full lg:h-[500px]" },
+                                                e('div', { className: "grid grid-cols-1 lg:grid-cols-6 gap-2 w-full lg:h-[500px]" },
+                                                    e(RankingTable, { title: "PCP $", dataKey: "totalImporteAcum", metaVal: 0, isMoneda: true, iconKey: 'superoMetaImporte' }),
                                                     e(RankingTable, { title: "PCP %", dataKey: "promedioPct", metaVal: parsePercent(esquema.metaPCP || 0), isPct: true, iconKey: 'pcpOk' }),
                                                     e(RankingTable, { title: "BATEO", dataKey: "bateo", metaVal: parsePercent(esquema.bateo || 0), isPct: true, iconKey: 'bateoOk' }),
                                                     e(RankingTable, { title: "PP", dataKey: "pp", metaVal: parseNum(esquema.precioPromedio || 0), isMoneda: true, iconKey: 'ppOk' }),
